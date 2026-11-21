@@ -120,3 +120,6 @@ site/index.html       หน้า Dashboard (Chart.js)
 tools/                สคริปต์ซิงก์จากโฟลเดอร์แชร์ (PowerShell + .bat ดับเบิลคลิก, ไม่ต้องติดตั้งโปรแกรม)
 .github/workflows/    Build & deploy ขึ้น GitHub Pages อัตโนมัติ
 ```
+
+---
+Made By **Suwarot Thanabat** · L150081
