@@ -78,6 +78,9 @@ select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px
 .advice{display:flex;gap:10px;align-items:flex-start;margin:4px 0 14px;padding:10px 14px;border-radius:10px;background:var(--surface-2);border-left:6px solid var(--text-3);font-size:14px}
 .advice b{white-space:nowrap}
 .live{display:inline-flex;align-items:center;gap:6px}
+.online{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px 10px;margin-top:6px;cursor:default}
+.online b{color:var(--text);font-variant-numeric:tabular-nums}
+.online i{width:8px;height:8px;border-radius:50%;background:#1b7f3b;display:inline-block}
 .live i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .bell{font:inherit;font-size:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer;margin-left:auto;display:inline-flex;align-items:center;gap:6px}
@@ -183,6 +186,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
       <h1>🩺 Dashboard ผลวัดความดัน พนักงานขับรถ</h1>
       <div class="sub" id="period">กำลังโหลดข้อมูล…</div>
       <div class="sub live" id="liveNote"></div>
+      <div class="online hidden" id="onlineBox" title="นับจากเบราว์เซอร์ที่เปิดหน้านี้อยู่ (อัปเดตทุก ~15 นาที หรือเมื่อมีคนเข้า/ออก) — ไม่เก็บชื่อหรือข้อมูลส่วนตัว"><i></i> กำลังดูอยู่ <b id="onlineN">–</b> คน</div>
     </div>
     <button class="btn-theme" id="themeBtn" type="button">◐ สลับธีม</button>
   </header>
@@ -786,6 +790,80 @@ function applyData(data, first) {
   }
   fillSelect(); render();
 }
+// ================= ผู้ใช้ที่ online (นับจำนวนอย่างเดียว ผ่าน ntfy.sh — ไม่ต้องสมัคร) =================
+// ส่งข้อความน้อยที่สุด เพราะ ntfy.sh ฟรีจำกัดจำนวนข้อความต่อวันต่อ IP (ทั้งบริษัทอาจใช้ IP เดียวกัน)
+//  - 1 เบราว์เซอร์ = 1 คน (แชร์ id ทุกแท็บ) · ส่ง "hb" เมื่อเปิดหน้า แล้วทุก 15 นาที (เฉพาะแท็บเดียว)
+//  - ส่ง "bye" เมื่อปิดหน้า · นับคนที่ส่ง hb ภายใน 16 นาทีล่าสุด
+(() => {
+  const TOPIC = 'bp-dash-tpt-f1499912a84d0cd27789';
+  const BASE = 'https://ntfy.sh/' + TOPIC;
+  const HB_MIN = 15, WINDOW_SEC = 16 * 60 + 30;
+  const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+               set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+  let me = ls.get('bp-presence-id');
+  if (!me) { me = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); ls.set('bp-presence-id', me); }
+  const seen = new Map();          // id -> server time (sec) ที่เห็นล่าสุด
+  let skew = 0, ok = false, failures = 0;
+  const now = () => Date.now() / 1000 + skew;
+
+  function show() {
+    const t = now();
+    for (const [id, ts] of seen) if (t - ts > WINDOW_SEC) seen.delete(id);
+    if (!ok) { $('onlineBox').classList.add('hidden'); return; }
+    seen.set(me, Math.max(seen.get(me) || 0, t)); // ตัวเองออนไลน์เสมอ
+    $('onlineN').textContent = seen.size;
+    $('onlineBox').classList.remove('hidden');
+  }
+  function post(kind, beacon) {
+    const body = `p1|${me}|${kind}`;
+    try {
+      if (beacon) {   // ตอนปิดหน้า: fetch keepalive (Chrome/Edge) หรือ sendBeacon สำรอง
+        try { fetch(BASE, { method: 'POST', body, keepalive: true, mode: 'cors' }).catch(() => {}); return; }
+        catch (e) { if (navigator.sendBeacon) navigator.sendBeacon(BASE, body); return; }
+      }
+      return fetch(BASE, { method: 'POST', body })
+        .then(r => { if (!r.ok) throw new Error(r.status); failures = 0; })
+        .catch(() => { failures++; });
+    } catch (e) {}
+  }
+  function heartbeat(force) {
+    const last = +ls.get('bp-presence-last') || 0;          // แชร์ระหว่างแท็บ -> ส่งแค่แท็บเดียว
+    if (!force && Date.now() - last < (HB_MIN - 0.5) * 60000) return;
+    if (force && Date.now() - last < 60000) return;
+    ls.set('bp-presence-last', String(Date.now()));
+    post('hb');
+  }
+  function onMsg(m) {
+    if (m.time) skew = m.time - Date.now() / 1000;
+    if (m.event !== 'message' || typeof m.message !== 'string') return;
+    const [v, id, kind] = m.message.split('|');
+    if (v !== 'p1' || !id) return;
+    const t = m.time || now();
+    if (kind === 'bye') {
+      if ((seen.get(id) || 0) <= t) seen.delete(id);
+      // อีกแท็บของเบราว์เซอร์นี้ปิดไป แต่แท็บนี้ยังเปิดอยู่ -> ประกาศตัวใหม่ (เฉพาะ bye ที่ใหม่กว่า hb ล่าสุดของเรา)
+      const myLast = (+ls.get('bp-presence-last') || 0) / 1000 + skew;
+      if (id === me && t >= myLast - 2) { ls.set('bp-presence-last', '0'); heartbeat(false); }
+    } else if (kind === 'hb') seen.set(id, Math.max(seen.get(id) || 0, t));
+    show();
+  }
+  function connect() {
+    if (!('EventSource' in window)) return;
+    const es = new EventSource(`${BASE}/sse?since=${Math.ceil(WINDOW_SEC / 60)}m`);
+    es.onopen = () => { ok = true; show(); };
+    es.onmessage = e => { try { onMsg(JSON.parse(e.data)); } catch (err) {} };
+    es.addEventListener('keepalive', e => { try { onMsg(JSON.parse(e.data)); } catch (err) {} });
+    es.onerror = () => { if (es.readyState === EventSource.CLOSED) { ok = false; show(); setTimeout(connect, 60000); } };
+  }
+  try {
+    connect();
+    heartbeat(true);
+    setInterval(() => { heartbeat(false); show(); }, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) heartbeat(false); });
+    window.addEventListener('pagehide', () => post('bye', true));
+  } catch (e) {}
+})();
+
 const loadData = () => fetch('data.json?t=' + Date.now(), { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 loadData().then(d => applyData(d, true)).catch(err => { $('period').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err; });
 setInterval(() => {
