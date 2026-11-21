@@ -33,6 +33,13 @@ $TokenFile = Join-Path $Here 'token.dat'
 $Api       = "https://api.github.com/repos/$Owner/$RepoName"
 $Exts      = @('.xlsx', '.xlsm')
 
+function ErrText($err) {
+    $m = $err.Exception.Message
+    $ln = $err.InvocationInfo.ScriptLineNumber
+    if ($ln) { $m += " (บรรทัด $ln)" }
+    return $m
+}
+
 function Log([string]$msg) {
     $line = '{0:yyyy-MM-dd HH:mm:ss}  {1}' -f (Get-Date), $msg
     Write-Host $line
@@ -49,14 +56,17 @@ if ($SetToken) {
     Write-Host 'วาง GitHub token (Fine-grained, สิทธิ์ Contents: Read and write เฉพาะ repo นี้) แล้วกด Enter'
     $sec = Read-Host -AsSecureString 'Token'
     if ($sec.Length -lt 20) { Write-Host 'token สั้นเกินไป — ยกเลิก'; exit 1 }
-    $sec | ConvertFrom-SecureString | Set-Content -LiteralPath $TokenFile -Encoding ASCII
+    $enc = $sec | ConvertFrom-SecureString
+    [IO.File]::WriteAllText($TokenFile, $enc, [Text.Encoding]::ASCII)
     Write-Host "บันทึก token (เข้ารหัส) แล้วที่ $TokenFile"
     exit 0
 }
 
 function Get-Token {
     if (-not (Test-Path -LiteralPath $TokenFile)) { throw 'ยังไม่ได้ตั้ง token — ดับเบิลคลิก setup-token.bat ก่อน' }
-    $sec  = Get-Content -LiteralPath $TokenFile -Raw | ConvertTo-SecureString
+    $raw = ((Get-Content -LiteralPath $TokenFile -Raw) -replace '\s', '')   # ตัดบรรทัดว่าง/ช่องว่างท้ายไฟล์
+    try { $sec = ConvertTo-SecureString -String $raw }
+    catch { throw 'ถอดรหัส token ไม่ได้ (token ถูกบันทึกโดยผู้ใช้/เครื่องอื่น หรือไฟล์เสีย) — ดับเบิลคลิก setup-token.bat ใหม่' }
     $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
     try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
@@ -156,14 +166,14 @@ function Sync-Once {
     else { Log "อัปโหลดแล้ว $changes ไฟล์ — Dashboard จะอัปเดตภายใน ~2 นาที" }
 }
 
-try { $script:Token = Get-Token } catch { Log "ผิดพลาด: $($_.Exception.Message)"; exit 1 }
+try { $script:Token = Get-Token } catch { Log "ผิดพลาด: $(ErrText $_)"; exit 1 }
 
 if ($Loop) {
     Log "เริ่มซิงก์อัตโนมัติทุก $IntervalMinutes นาที (ปิดหน้าต่างนี้เพื่อหยุด)"
     while ($true) {
-        try { Sync-Once } catch { Log "ผิดพลาด: $($_.Exception.Message)" }
+        try { Sync-Once } catch { Log "ผิดพลาด: $(ErrText $_)" }
         Start-Sleep -Seconds ($IntervalMinutes * 60)
     }
 } else {
-    try { Sync-Once } catch { Log "ผิดพลาด: $($_.Exception.Message)"; exit 1 }
+    try { Sync-Once } catch { Log "ผิดพลาด: $(ErrText $_)"; exit 1 }
 }
