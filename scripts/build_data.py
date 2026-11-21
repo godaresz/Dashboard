@@ -116,14 +116,23 @@ def parse_sheet(ws, fallback_ym):
 
 
 def main():
-    files = sorted(f for f in glob.glob(os.path.join(DATA_DIR, "*.xls*")) if not os.path.basename(f).startswith("~$"))
+    files = sorted(
+        f for f in glob.glob(os.path.join(DATA_DIR, "*"))
+        if os.path.splitext(f)[1].lower() in (".xlsx", ".xlsm") and not os.path.basename(f).startswith("~$")
+    )
     if not files:
-        sys.exit("ไม่พบไฟล์ Excel ในโฟลเดอร์ data/")
+        sys.exit("ไม่พบไฟล์ Excel (.xlsx) ในโฟลเดอร์ data/")
 
     merged = {}
     today = date.today()
+    used = []
     for f in files:
-        wb = openpyxl.load_workbook(f, data_only=True, read_only=True)
+        try:
+            wb = openpyxl.load_workbook(f, data_only=True, read_only=True)
+        except Exception as e:  # ไฟล์เสีย / กำลังบันทึกอยู่ — ข้ามไป ไม่ให้ทั้งระบบล่ม
+            print(f"⚠️ ข้ามไฟล์ {os.path.basename(f)}: {e}")
+            continue
+        used.append(f)
         for ws in wb.worksheets:
             for p in parse_sheet(ws, (today.year, today.month)):
                 key = (p["name"], p["shift"])
@@ -134,6 +143,9 @@ def main():
                 for iso, vals in p["readings"].items():
                     cur["readings"].setdefault(iso, {}).update(vals)
         print(f"อ่านไฟล์: {os.path.basename(f)}")
+
+    if not used:
+        sys.exit("อ่านไฟล์ Excel ไม่ได้เลยสักไฟล์")
 
     drivers = []
     for i, p in enumerate(sorted(merged.values(), key=lambda x: (x["shift"], x["plate"], x["name"]))):
@@ -154,7 +166,7 @@ def main():
 
     out = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "sources": [os.path.basename(f) for f in files],
+        "sources": [os.path.basename(f) for f in used],
         "drivers": drivers,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

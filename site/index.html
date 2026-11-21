@@ -65,6 +65,21 @@ select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px
 .sugg li .m{color:var(--text-3);font-size:12.5px;white-space:nowrap}
 .sugg li mark{background:var(--warn-bg);color:inherit;border-radius:2px}
 .sugg .no{color:var(--text-3);cursor:default}
+.criteria{padding:0}
+.criteria summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.criteria summary::-webkit-details-marker{display:none}
+.criteria summary .t{font-weight:600;font-size:14px;margin-right:4px}
+.criteria summary .t::before{content:'▸ ';color:var(--text-3)}
+.criteria[open] summary .t::before{content:'▾ '}
+.criteria .body{padding:0 16px 16px}
+.criteria td.act{white-space:normal;min-width:280px;font-size:13.5px}
+.criteria td.lvl{font-weight:600}
+.src{font-size:12.5px;color:var(--text-3);margin-top:8px}
+.advice{display:flex;gap:10px;align-items:flex-start;margin:4px 0 14px;padding:10px 14px;border-radius:10px;background:var(--surface-2);border-left:6px solid var(--text-3);font-size:14px}
+.advice b{white-space:nowrap}
+.live{display:inline-flex;align-items:center;gap:6px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .filter-note{font-size:13px;color:var(--text-2);margin:-6px 0 12px}
 .btn-clear{font:inherit;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text-2);border-radius:8px;padding:6px 10px;cursor:pointer}
 .legend-status{margin-left:auto;display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-2)}
@@ -143,6 +158,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
     <div>
       <h1>🩺 Dashboard ผลวัดความดัน พนักงานขับรถ</h1>
       <div class="sub" id="period">กำลังโหลดข้อมูล…</div>
+      <div class="sub live" id="liveNote"></div>
     </div>
     <button class="btn-theme" id="themeBtn" type="button">◐ สลับธีม</button>
   </header>
@@ -159,12 +175,15 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
       <ul class="sugg hidden" id="sugg" role="listbox"></ul>
     </div>
     <button class="btn-clear hidden" id="clearBtn" type="button">✕ กลับภาพรวม</button>
-    <div class="legend-status">
-      <span><span class="chip good">✓ ปกติ</span> &lt;140/90</span>
-      <span><span class="chip warn">▲ สูง</span> ≥140 หรือ ≥90</span>
-      <span><span class="chip crit">⚠ สูงมาก</span> ≥160 หรือ ≥100</span>
-    </div>
   </div>
+
+  <details class="card criteria" id="criteria">
+    <summary><span class="t">เกณฑ์ระดับความดันและวิธีปฏิบัติ</span><span id="critChips" style="display:flex;flex-wrap:wrap;gap:6px"></span></summary>
+    <div class="body">
+      <div class="tbl-wrap"><table id="critTable"></table></div>
+      <div class="src">ที่มา: โรงพยาบาลศิริราชปิยมหาราชการุณย์ และองค์การอนามัยโลก (WHO) · ใช้ระดับที่สูงกว่าระหว่างค่าบน (SYS) และค่าล่าง (DIA) · พขร. ที่อนุญาตให้ขับได้: ไม่เกิน 140/90 mmHg · ชีพจรปกติ 60–100 ครั้ง/นาที</div>
+    </div>
+  </details>
 
   <!-- ===== ภาพรวม ===== -->
   <section id="overview">
@@ -174,7 +193,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
       <div class="card">
         <h2>จำนวนครั้งที่วัด แยกตามระดับ รายวัน</h2>
         <div class="desc">แต่ละแท่ง = จำนวน พขร. ที่วัดในวันนั้น</div>
-        <div class="serieslegend"><span><i class="sw" style="background:var(--good)"></i>ปกติ</span><span><i class="sw" style="background:var(--warn)"></i>สูง</span><span><i class="sw" style="background:var(--crit)"></i>สูงมาก</span></div>
+        <div class="serieslegend" id="dailyLegend"></div>
         <div class="chart-box"><canvas id="ovDaily"></canvas></div>
       </div>
       <div class="card">
@@ -206,11 +225,12 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
         <div class="meta" id="pMeta"></div>
         <span id="pChip"></span>
       </div>
+      <div class="advice" id="pAdvice"></div>
       <div class="kpis" id="pKpis" style="margin-bottom:0"></div>
     </div>
     <div class="card">
       <h2>แนวโน้มความดันโลหิต</h2>
-      <div class="desc">จุดสีแดงเข้ม = วันที่เกินเกณฑ์ · เส้นประ = เกณฑ์ 140 / 90</div>
+      <div class="desc">จุดใหญ่สีส้ม/แดง = วันที่เกินเกณฑ์ (สีตามระดับ) · เส้นประ = เกณฑ์ขับรถ 140 / 90</div>
       <div class="serieslegend"><span><i class="sw line" style="background:var(--sys)"></i>ตัวบน (Systolic)</span><span><i class="sw line" style="background:var(--dia)"></i>ตัวล่าง (Diastolic)</span><span><i class="sw dash"></i>เกณฑ์</span></div>
       <div class="chart-box tall"><canvas id="pBP"></canvas></div>
     </div>
@@ -222,7 +242,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
       </div>
       <div class="card">
         <h2>บันทึกรายวัน</h2>
-        <div class="desc">ล่าสุดอยู่ด้านบน</div>
+        <div class="desc">ล่าสุดอยู่ด้านบน · ชี้ที่ระดับเพื่อดูวิธีปฏิบัติ</div>
         <div class="tbl-wrap" style="max-height:300px;overflow-y:auto"><table id="pTable"></table></div>
       </div>
     </div>
@@ -237,19 +257,43 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
 'use strict';
 const TH_MONTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const TH_DOW = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
-const STATUS = {
-  good:{label:'ปกติ', icon:'✓'},
-  warn:{label:'สูง', icon:'▲'},
-  crit:{label:'สูงมาก', icon:'⚠'},
-  none:{label:'ไม่มีข้อมูล', icon:'–'}
-};
-const statusOf = (s, d) => {
+// เกณฑ์ตามโปสเตอร์ "เกณฑ์การประเมินผล และวิธีปฏิบัติ" (รพ.ศิริราชปิยมหาราชการุณย์ / WHO)
+const LEVELS = [
+  { k:'low',    label:'ความดันต่ำ',   sys:'ต่ำกว่า 90', dia:'ต่ำกว่า 60', icon:'▼', bg:'#3f6fd1', ink:'#ffffff', sev:2, over:false,
+    act:'ปฏิบัติงานได้ถ้าไม่มีอาการอื่นร่วมด้วย หากมีอาการ เช่น หน้ามืด ตาลาย ใจสั่น เพลียผิดปกติ หรือเป็นลม ให้งดขับรถ และงดงานที่มีความเสี่ยง' },
+  { k:'good',   label:'ความดันที่ดี', sys:'ต่ำกว่า 120', dia:'ต่ำกว่า 80', icon:'✓', bg:'#1b7f3b', ink:'#ffffff', sev:0, over:false,
+    act:'ปฏิบัติงานขับรถได้ตามปกติ' },
+  { k:'normal', label:'ปกติ',         sys:'120–129', dia:'80–84', icon:'✓', bg:'#7cc04a', ink:'#10300f', sev:1, over:false,
+    act:'ปฏิบัติงานได้ แต่ควรบันทึกค่าและติดตามความดันสม่ำเสมอ' },
+  { k:'elev',   label:'ค่อนข้างสูง',  sys:'130–139', dia:'85–89', icon:'●', bg:'#f2cc0c', ink:'#3d3000', sev:3, over:false,
+    act:'ไม่เกิน 140/90 สามารถปฏิบัติงานได้ และติดตามความดันสม่ำเสมอ' },
+  { k:'l4',     label:'สูงเล็กน้อย',  sys:'140–159', dia:'90–99', icon:'▲', bg:'#f59f1a', ink:'#3d2400', sev:4, over:true,
+    act:'นั่งพักอย่างน้อย 5 นาที แล้ววัดซ้ำ หากยังสูงให้แจ้งผู้รับผิดชอบ และดำเนินการตามระเบียบ' },
+  { k:'l5',     label:'สูงปานกลาง',   sys:'160–179', dia:'100–109', icon:'▲', bg:'#e8590c', ink:'#ffffff', sev:5, over:true,
+    act:'ให้พัก และวัดซ้ำ หากยังอยู่ในระดับเดิม ควรส่งประเมินโดยแพทย์ก่อนพิจารณากลับไปขับรถ' },
+  { k:'l6',     label:'สูงมาก',       sys:'180 ขึ้นไป', dia:'110 ขึ้นไป', icon:'⛔', bg:'#c92a2a', ink:'#ffffff', sev:6, over:true,
+    act:'งดขับรถ และงดงานที่มีความเสี่ยง ส่งประเมินทางการแพทย์ โดยเฉพาะหากมีอาการผิดปกติ' },
+];
+const LV = Object.fromEntries(LEVELS.map(l => [l.k, l]));
+LV.none = { k:'none', label:'ไม่มีข้อมูล', icon:'–', sev:-1, over:false, act:'' };
+const LV_BY_IDX = [null, 'good', 'normal', 'elev', 'l4', 'l5', 'l6'];
+const levelOf = (s, d) => {
   if (s == null && d == null) return 'none';
-  if ((s||0) >= 160 || (d||0) >= 100) return 'crit';
-  if ((s||0) >= 140 || (d||0) >= 90) return 'warn';
-  return 'good';
+  const si = s == null ? 1 : s >= 180 ? 6 : s >= 160 ? 5 : s >= 140 ? 4 : s >= 130 ? 3 : s >= 120 ? 2 : 1;
+  const di = d == null ? 1 : d >= 110 ? 6 : d >= 100 ? 5 : d >= 90 ? 4 : d >= 85 ? 3 : d >= 80 ? 2 : 1;
+  const m = Math.max(si, di);
+  if (m === 1 && ((s != null && s < 90) || (d != null && d < 60))) return 'low';
+  return LV_BY_IDX[m];
 };
-const chip = st => `<span class="chip ${st}">${STATUS[st].icon} ${STATUS[st].label}</span>`;
+const statusOf = levelOf;
+const STATUS = LV;
+const chip = st => `<span class="chip lv-${st}" title="${esc(LV[st].act)}">${LV[st].icon} ${LV[st].label}</span>`;
+(() => {
+  const st = document.createElement('style');
+  st.textContent = LEVELS.map(l => `.lv-${l.k}{background:${l.bg};color:${l.ink}}`).join('\n') +
+    '\n.lv-none{background:var(--none-bg);color:var(--text-3)}';
+  document.head.appendChild(st);
+})();
 const pd = iso => { const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d); };
 const dShort = iso => { const d = pd(iso); return `${d.getDate()} ${TH_MONTH[d.getMonth()]}`; };
 const dLong = iso => { const d = pd(iso); return `${TH_DOW[d.getDay()]} ${d.getDate()} ${TH_MONTH[d.getMonth()]} ${d.getFullYear()+543}`; };
@@ -284,12 +328,14 @@ function enrich(data) {
     d.avgSys = avg(S); d.avgDia = avg(D); d.avgPulse = avg(P);
     d.maxSys = S.length ? Math.max(...S) : null; d.maxDia = D.length ? Math.max(...D) : null;
     d.n = d.readings.length;
-    d.nWarn = d.readings.filter(r=>r.st==='warn').length;
-    d.nCrit = d.readings.filter(r=>r.st==='crit').length;
-    d.nHigh = d.nWarn + d.nCrit;
+    d.nHigh = d.readings.filter(r => LV[r.st].over).length;          // เกิน 140/90
+    d.nSevere = d.readings.filter(r => r.st === 'l5' || r.st === 'l6').length;
+    d.nStop = d.readings.filter(r => r.st === 'l6').length;
+    d.nLow = d.readings.filter(r => r.st === 'low').length;
     d.pctHigh = d.n ? d.nHigh / d.n : 0;
     d.last = d.readings[d.readings.length-1] || null;
     d.avgSt = statusOf(d.avgSys, d.avgDia);
+    d.worst = d.readings.reduce((w, r) => LV[r.st].sev > LV[w].sev ? r.st : w, 'none');
   });
   data.dates = [...new Set(data.drivers.flatMap(d => d.readings.map(r => r.date)))].sort();
   return data;
@@ -370,34 +416,36 @@ const refLine = (label, value, n) => ({
 function renderOverview() {
   const ds = visible();
   const all = ds.flatMap(d => d.readings);
-  const nHigh = all.filter(r => r.st !== 'good').length;
-  const nCrit = all.filter(r => r.st === 'crit').length;
-  const watch = ds.filter(d => d.avgSt !== 'good').length;
+  const cntLv = k => all.filter(r => r.st === k).length;
+  const nHigh = all.filter(r => LV[r.st].over).length;
+  const watch = ds.filter(d => LV[d.avgSt].over).length;
   const note = $('filterNote');
   note.classList.toggle('hidden', !query);
   if (query) note.innerHTML = `ผลการค้นหา “<b>${esc(query)}</b>”: พบ ${ds.length} คน — ตัวเลขและกราฟด้านล่างคำนวณเฉพาะคนที่ค้นพบ`;
   $('ovKpis').innerHTML = [
     ['พนักงานขับรถ', ds.length, 'คน', `กะ A ${ds.filter(d=>d.shift==='A').length} · กะ B ${ds.filter(d=>d.shift==='B').length}`],
     ['จำนวนครั้งที่วัด', all.length, 'ครั้ง', `${DATA.dates.length} วันทำการ`],
-    ['ครั้งที่ความดันสูง', all.length ? Math.round(nHigh/all.length*100) : 0, '%', `${nHigh} ครั้ง · สูงมาก ${nCrit} ครั้ง`],
-    ['ค่าเฉลี่ยเกินเกณฑ์', watch, 'คน', 'ควรติดตาม / พบแพทย์'],
+    ['ครั้งที่เกินเกณฑ์ขับ (≥140/90)', all.length ? Math.round(nHigh/all.length*100) : 0, '%', `${nHigh} ครั้ง · สูงเล็กน้อย ${cntLv('l4')} ครั้ง`],
+    ['ควรพบแพทย์ / งดขับ', cntLv('l5') + cntLv('l6'), 'ครั้ง', `สูงปานกลาง ${cntLv('l5')} · สูงมาก ${cntLv('l6')} · ความดันต่ำ ${cntLv('low')}`],
+    ['ค่าเฉลี่ยเกินเกณฑ์', watch, 'คน', 'ค่าเฉลี่ยทั้งเดือน ≥140/90 ควรติดตามใกล้ชิด'],
   ].map(([k,v,u,h]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div></div>`).join('');
 
   // daily stacked
+  $('dailyLegend').innerHTML = LEVELS.map(l => `<span><i class="sw" style="background:${l.bg}"></i>${l.label}</span>`).join('');
   const labels = DATA.dates.map(dShort);
   const cnt = st => DATA.dates.map(dt => ds.reduce((a,d) => a + d.readings.filter(r => r.date===dt && r.st===st).length, 0));
   const gap = css('--surface');
   const bar = (label, st, color) => ({ label, data: cnt(st), backgroundColor: color, borderColor: gap, borderWidth: {top:2}, borderRadius: 0, borderSkipped: false, maxBarThickness: 28 });
   mk('ovDaily', {
     type: 'bar',
-    data: { labels, datasets: [bar('ปกติ','good',css('--good')), bar('สูง','warn',css('--warn')), bar('สูงมาก','crit',css('--crit'))] },
+    data: { labels, datasets: LEVELS.map(l => bar(l.label, l.k, l.bg)) },
     options: {
       maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: tooltipOpts({ callbacks: {
         title: it => dLong(DATA.dates[it[0].dataIndex]),
         label: c => ` ${c.dataset.label}: ${c.raw} คน`,
         footer: it => `รวม ${it.reduce((a,c)=>a+c.raw,0)} คน`
-      }}) },
+      }, filter: c => c.raw > 0, itemSort: (a, b) => b.datasetIndex - a.datasetIndex }) },
       scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'คน' } } }
     }
   });
@@ -438,9 +486,9 @@ function renderTable(ds) {
   const cols = [
     ['name','ชื่อ – สกุล',false], ['plate','ทะเบียน',false], ['shift','กะ',false],
     ['avgSys','เฉลี่ย บน/ล่าง',true], ['avgPulse','ชีพจรเฉลี่ย',true], ['maxSys','สูงสุด',true],
-    ['pctHigh','ครั้งที่สูง',true], ['n','วัด (ครั้ง)',true], ['avgSt','สถานะ (เฉลี่ย)',false], ['last','ล่าสุด',false]
+    ['pctHigh','เกินเกณฑ์ (≥140/90)',true], ['n','วัด (ครั้ง)',true], ['avgSt','สถานะ (เฉลี่ย)',false], ['last','ล่าสุด',false]
   ];
-  const rank = { good:0, warn:1, crit:2, none:-1 };
+  const rank = Object.fromEntries(Object.values(LV).map(l => [l.k, l.sev]));
   const rows = ds.slice().sort((a,b) => {
     let x = a[sortKey], y = b[sortKey];
     if (sortKey === 'avgSt') { x = rank[x]; y = rank[y]; }
@@ -455,10 +503,10 @@ function renderTable(ds) {
       <td class="num">${r0(d.avgSys)}/${r0(d.avgDia)}</td>
       <td class="num">${r0(d.avgPulse)}</td>
       <td class="num">${d.maxSys ?? '–'}/${d.maxDia ?? '–'}</td>
-      <td class="num"><span class="bartrack"><i class="${d.nCrit ? 'crit':''}" style="width:${Math.round(d.pctHigh*100)}%"></i></span>${d.nHigh}/${d.n}</td>
+      <td class="num"><span class="bartrack"><i style="width:${Math.round(d.pctHigh*100)}%;background:${(LV[d.worst].over ? LV[d.worst] : LV.l4).bg}"></i></span>${d.nHigh}/${d.n}</td>
       <td class="num">${d.n}</td>
       <td>${chip(d.avgSt)}</td>
-      <td>${d.last ? `${dShort(d.last.date)} · ${d.last.sys ?? '–'}/${d.last.dia ?? '–'}` : '–'}</td>
+      <td>${d.last ? `${dShort(d.last.date)} · ${d.last.sys ?? '–'}/${d.last.dia ?? '–'} ${chip(d.last.st)}` : '–'}</td>
     </tr>`).join('') + (rows.length ? '' : `<tr><td colspan="${cols.length}" class="empty">ไม่พบพนักงานที่ตรงกับคำค้น</td></tr>`) + '</tbody>';
   $('ovTable').querySelectorAll('th').forEach(th => th.onclick = () => {
     const k = th.dataset.k; if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = (k==='name'||k==='plate'||k==='shift') ? 1 : -1; }
@@ -477,7 +525,7 @@ function renderHeatmap(ds) {
     const by = Object.fromEntries(d.readings.map(r => [r.date, r]));
     html += `<tr><td class="nm" data-id="${d.id}">${esc(d.name)} <span style="color:var(--text-3)">(${esc(d.shift)})</span></td>` +
       dates.map(dt => { const r = by[dt]; if (!r) return `<td class="c none" data-tip="${esc(d.name)} · ${dLong(dt)} · ไม่มีข้อมูล"></td>`;
-        return `<td class="c ${r.st}" data-tip="${esc(d.name)} · ${dLong(dt)} · ${r.sys ?? '–'}/${r.dia ?? '–'} mmHg · ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}"><b>${r.sys ?? '–'}</b><span>${r.dia ?? '–'}</span></td>`; }).join('') + '</tr>';
+        return `<td class="c lv-${r.st}" data-tip="${esc(d.name)} · ${dLong(dt)} · ${r.sys ?? '–'}/${r.dia ?? '–'} mmHg · ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}"><b>${r.sys ?? '–'}</b><span>${r.dia ?? '–'}</span></td>`; }).join('') + '</tr>';
   });
   $('heatmap').innerHTML = html + '</tbody>';
   $('heatmap').querySelectorAll('td.nm').forEach(td => td.onclick = () => selectPerson(+td.dataset.id));
@@ -500,11 +548,18 @@ function renderPerson() {
   $('pMeta').textContent = `ทะเบียน ${d.plate || '–'} · กะ ${d.shift}${d.dept ? ' · ' + d.dept : ''}${d.note ? ' · ' + d.note : ''}`;
   $('pChip').innerHTML = chip(d.avgSt);
   const minP = d.readings.map(r=>r.pulse).filter(Boolean);
+  const adv = $('pAdvice');
+  if (d.last) {
+    const L = LV[d.last.st];
+    adv.style.borderLeftColor = L.bg;
+    adv.innerHTML = `<span>${chip(d.last.st)}</span><div><b>คำแนะนำจากค่าล่าสุด (${dLong(d.last.date)}: ${d.last.sys ?? '–'}/${d.last.dia ?? '–'} mmHg)</b><br>${esc(L.act)}</div>`;
+    adv.classList.remove('hidden');
+  } else adv.classList.add('hidden');
   $('pKpis').innerHTML = [
     ['ความดันเฉลี่ย', `${r0(d.avgSys)}/${r0(d.avgDia)}`, 'mmHg', STATUS[d.avgSt].label],
     ['ล่าสุด', d.last ? `${d.last.sys ?? '–'}/${d.last.dia ?? '–'}` : '–', 'mmHg', d.last ? dLong(d.last.date) : ''],
     ['สูงสุด (บน/ล่าง)', `${d.maxSys ?? '–'}/${d.maxDia ?? '–'}`, 'mmHg', 'ค่าสูงสุดของแต่ละตัว'],
-    ['วันที่ความดันสูง', d.nHigh, `/ ${d.n} วัน`, `สูงมาก ${d.nCrit} วัน`],
+    ['วันที่เกินเกณฑ์ (≥140/90)', d.nHigh, `/ ${d.n} วัน`, `สูงปานกลาง ${d.readings.filter(r=>r.st==='l5').length} · สูงมาก ${d.nStop} · ต่ำ ${d.nLow}`],
     ['ชีพจรเฉลี่ย', r0(d.avgPulse), 'ครั้ง/นาที', minP.length ? `ต่ำสุด ${Math.min(...minP)} · สูงสุด ${Math.max(...minP)}` : ''],
   ].map(([k,v,u,h]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div></div>`).join('');
 
@@ -512,8 +567,7 @@ function renderPerson() {
   const by = Object.fromEntries(d.readings.map(r => [r.date, r]));
   const labels = dates.map(dShort);
   const ser = k => dates.map(dt => by[dt] ? (by[dt][k] ?? null) : null);
-  const crit = css('--crit');
-  const ptColor = (k, base, lim) => dates.map(dt => by[dt] && by[dt][k] >= lim ? crit : base);
+  const ptColor = (k, base, lim) => dates.map(dt => by[dt] && by[dt][k] >= lim ? LV[by[dt].st].bg : base);
   const sysC = css('--sys'), diaC = css('--dia');
   mk('pBP', {
     type: 'line',
@@ -587,15 +641,35 @@ qEl.addEventListener('keydown', e => {
 $('qClear').onclick = () => { selectPerson(null); qEl.focus(); };
 $('clearBtn').onclick = () => selectPerson(null);
 
-fetch('data.json', { cache: 'no-store' }).then(r => r.json()).then(data => {
+// criteria panel
+$('critChips').innerHTML = LEVELS.map(l => chip(l.k)).join('');
+$('critTable').innerHTML = `<thead><tr><th>ระดับความดัน</th><th class="num">SYS (บน)</th><th class="num">DIA (ล่าง)</th><th>ขับรถ</th><th>วิธีปฏิบัติ</th></tr></thead><tbody>` +
+  LEVELS.map((l, i) => `<tr><td class="lvl">${chip(l.k)}</td><td class="num">${l.sys}</td><td class="num">${l.dia}</td><td>${l.k === 'l6' ? '⛔ งดขับ' : l.over ? '⚠️ ต้องวัดซ้ำ' : '✅ ได้'}</td><td class="act">${i + 1}) ${esc(l.act)}</td></tr>`).join('') + '</tbody>';
+
+// ---- load data + auto refresh every 5 min
+const REFRESH_MS = 5 * 60 * 1000;
+function applyData(data, first) {
   DATA = enrich(data);
   const f = DATA.dates[0], l = DATA.dates[DATA.dates.length-1];
   $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · พขร. ${DATA.drivers.length} คน` : 'ยังไม่มีข้อมูล';
   const g = new Date(DATA.generatedAt);
-  $('foot').textContent = `แหล่งข้อมูล: ${DATA.sources.join(', ')} · อัปเดตล่าสุด ${g.toLocaleString('th-TH')} · เกณฑ์อ้างอิง: ปกติ <140/90 mmHg, สูง ≥140/90, สูงมาก ≥160/100`;
-  const m = location.hash.match(/^#p(\d+)$/);
-  if (m && DATA.drivers.some(d => d.id === +m[1])) selectPerson(+m[1]); else render();
-}).catch(err => { $('period').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err; });
+  $('liveNote').innerHTML = `<i></i> ข้อมูลอัปเดตล่าสุด ${g.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} · หน้านี้รีเฟรชข้อมูลอัตโนมัติทุก 5 นาที`;
+  $('foot').textContent = `แหล่งข้อมูล: ${DATA.sources.join(', ')} · เกณฑ์อ้างอิง: โรงพยาบาลศิริราชปิยมหาราชการุณย์ / องค์การอนามัยโลก (WHO)`;
+  if (first) {
+    const m = location.hash.match(/^#p(\d+)$/);
+    if (m && DATA.drivers.some(d => d.id === +m[1])) { selectPerson(+m[1]); return; }
+  }
+  fillSelect(); render();
+}
+const loadData = () => fetch('data.json?t=' + Date.now(), { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+loadData().then(d => applyData(d, true)).catch(err => { $('period').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err; });
+setInterval(() => {
+  if (document.hidden) return;
+  loadData().then(d => { if (!DATA || d.generatedAt !== DATA.generatedAt) applyData(d, false); }).catch(() => {});
+}, REFRESH_MS);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && DATA) loadData().then(d => { if (d.generatedAt !== DATA.generatedAt) applyData(d, false); }).catch(() => {});
+});
 })();
 </script>
 </body>
