@@ -37,24 +37,30 @@ Dashboard แสดงผลการวัดความดันโลหิ�
 > ถ้าต้องการจำกัดผู้ดู ให้ตั้ง repo เป็น Private (Pages แบบจำกัดสิทธิ์ต้องใช้ GitHub Enterprise) หรือเปิดใช้ภายในองค์กรแทน
 
 ## ตั้งค่าตัวนับ "กำลังดูอยู่" (Firebase)
-1. Firebase Console → เลือกโปรเจกต์ (ใช้โปรเจกต์เดิม เช่น 5ส ได้) → **Build → Realtime Database** (ถ้ายังไม่มี กด Create Database เลือก Singapore)
-2. แท็บ **Rules** — **เพิ่ม** ส่วน `bp-dashboard` เข้าไปใน `"rules"` เดิม (อย่าลบ rules ของแอปอื่น):
+ใช้โปรเจกต์ Firebase `test-stock-78d08` (ค่าอยู่ใน `site/firebase-config.js` แล้ว) โดยเก็บใน **Realtime Database** แยกจาก Firestore ของ Stock Control
+1. [Firebase Console](https://console.firebase.google.com/project/test-stock-78d08/database) → **Build → Realtime Database → Create Database**
+   → Location: **Singapore (asia-southeast1)** → **Start in locked mode** → Enable
+2. แท็บ **Rules** → ลบของเดิมทั้งหมด วางอันนี้ → **Publish**
    ```json
-   "bp-dashboard": {
-     "presence": {
-       ".read": true,
-       "$browser": {
-         "$tab": {
-           ".write": true,
-           ".validate": "newData.val() == null || newData.isNumber()"
+   {
+     "rules": {
+       "bp-dashboard": {
+         "presence": {
+           ".read": true,
+           "$browser": {
+             "$tab": {
+               ".write": true,
+               ".validate": "newData.val() == null || newData.isNumber()"
+             }
+           }
          }
        }
      }
    }
    ```
-3. ⚙️ **Project settings → Your apps → เว็บแอป** → คัดลอกค่า `firebaseConfig` (ต้องมี `databaseURL`)
-4. แก้ไฟล์ `site/firebase-config.js` บน GitHub (ไอคอนดินสอ ✏️) ใส่ค่าแทน `null` → Commit
-   ถ้าไม่ได้ตั้งค่า ตัวนับจะซ่อนไป ส่วนอื่นใช้งานได้ปกติ
+   (อนุญาตเฉพาะตัวนับนี้ ส่วนอื่นในฐานข้อมูลยังล็อกอยู่)
+3. ถ้าเลือก region อื่นที่ไม่ใช่ Singapore ให้คัดลอก URL ด้านบนหน้า Realtime Database ไปแทน `databaseURL` ใน `site/firebase-config.js`
+4. ถ้าตั้ง `window.BP_FIREBASE_CONFIG = null` ตัวนับจะซ่อนไป ส่วนอื่นใช้งานได้ปกติ
 
 ## อัปเดตข้อมูล
 1. บันทึกไฟล์ Excel ตามรูปแบบเดิม (ชื่อพนักงานขับรถ | ทะเบียนรถ | กะ | … | `วันที่ 1-30 /11/26` → บน / ล่าง / ชีพจร)
