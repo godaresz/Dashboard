@@ -3,8 +3,7 @@
 //  ค่าเหล่านี้เป็นค่าสาธารณะของเว็บแอป (ไม่ใช่รหัสลับ) — ความปลอดภัยคุมด้วย Realtime Database Rules
 //
 //  โปรเจกต์: test-stock-78d08 (ใช้ร่วมกับ Stock Control แต่เก็บใน Realtime Database แยกจาก Firestore)
-//  ต้องสร้าง Realtime Database ในโปรเจกต์ก่อน (Build → Realtime Database → Create Database → Singapore)
-//  ถ้าสร้างคนละ region ให้คัดลอก URL จากหน้า Realtime Database มาใส่ databaseURL แทน
+//  Realtime Database นี้ใช้ร่วมกับแอป 5ส — Dashboard เขียนเฉพาะที่ bp-dashboard/presence (ดู Rules ใน README)
 //
 //  ถ้าตั้งเป็น null ตัวนับจะซ่อนไป ส่วนอื่นของ Dashboard ใช้งานได้ปกติ
 // ------------------------------------------------------------------
