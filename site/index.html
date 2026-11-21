@@ -42,13 +42,13 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--text);font-family:"IBM Plex Sans Thai",system-ui,sans-serif;font-size:15px;line-height:1.5}
-.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 48px}
+.wrap{max-width:1240px;margin:0 auto;padding:44px 16px 48px}
 header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
 h1{font-size:24px;margin:0;font-weight:700;letter-spacing:-.01em}
 .sub{color:var(--text-2);font-size:14px}
 .btn-theme{background:var(--surface);border:1px solid var(--border);color:var(--text-2);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:13px}
 
-.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:16px;position:sticky;top:8px;z-index:5}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:16px;position:sticky;top:42px;z-index:5}
 .filters label{font-size:13px;color:var(--text-2)}
 .seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:3px}
 .seg button{border:0;background:transparent;font:inherit;font-size:14px;padding:5px 14px;border-radius:6px;cursor:pointer;color:var(--text-2)}
@@ -170,7 +170,8 @@ tbody tr.click:hover{background:var(--surface-2)}
 .hidden{display:none!important}
 .tip{position:fixed;pointer-events:none;background:var(--text);color:var(--surface);font-size:12.5px;padding:6px 9px;border-radius:6px;z-index:50;white-space:nowrap}
 footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
-.madeby{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);text-align:center;font-size:13px;color:var(--text-2)}
+/* Made By: ค้างมุมซ้ายบนตลอดแม้เลื่อนหน้า (ผู้ใช้กำหนด) */
+.madeby{position:fixed;top:8px;left:8px;z-index:40;font-size:12.5px;color:var(--text-2);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 12px;box-shadow:0 2px 8px rgba(0,0,0,.08);white-space:nowrap;pointer-events:none}
 .madeby b{color:var(--text);font-weight:600}
 @media (max-width:600px){
   .filters{position:static}
@@ -183,6 +184,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
 </style>
 </head>
 <body>
+<div class="madeby">Made By <b>Suwarot Thanabat</b> · L150081</div>
 <div class="wrap">
   <header class="top">
     <div>
@@ -292,7 +294,6 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
   </section>
 
   <footer id="foot"></footer>
-  <div class="madeby">Made By <b>Suwarot Thanabat</b> · L150081</div>
 </div>
 <div class="tip hidden" id="tip"></div>
 
