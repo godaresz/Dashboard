@@ -80,6 +80,30 @@ select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px
 .live{display:inline-flex;align-items:center;gap:6px}
 .live i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.bell{font:inherit;font-size:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer;margin-left:auto;display:inline-flex;align-items:center;gap:6px}
+.bell .n{background:#c92a2a;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:0 7px;line-height:20px;min-width:20px;text-align:center}
+.bell.ok .n{background:#1b7f3b}
+.alert{border-left:6px solid #c92a2a}
+.alert.ok{border-left-color:#1b7f3b}
+.alert-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:10px}
+.alert-head h2{margin:0}
+.alert-head select{min-width:0;padding:4px 8px;font-size:13px}
+.alert-head .sp{flex:1}
+.alert-head .lnk{font:inherit;font-size:13px;border:0;background:none;color:var(--accent);cursor:pointer;padding:0;text-decoration:underline}
+.al-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.al-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--surface-2);border-left:5px solid var(--text-3);cursor:pointer;text-align:left;font:inherit;color:inherit;border-top:0;border-right:0;border-bottom:0;width:100%}
+.al-item:hover{outline:2px solid var(--border)}
+.al-item .bp{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap}
+.al-item .bp small{display:block;font-size:11.5px;font-weight:500;color:var(--text-3)}
+.al-item .who{font-weight:600}
+.al-item .who .m{font-weight:400;color:var(--text-3);font-size:12.5px}
+.al-item .act{font-size:12.5px;color:var(--text-2);margin-top:3px}
+.al-item.stop{background:var(--crit-bg)}
+.new{display:inline-block;background:#2a78d6;color:#fff;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:1px}
+.al-ok{color:var(--good-ink);font-weight:600}
+.al-sum{display:flex;flex-wrap:wrap;gap:6px}
+@keyframes flash{0%{box-shadow:0 0 0 0 rgba(201,42,42,.6)}100%{box-shadow:0 0 0 14px rgba(201,42,42,0)}}
+.flash{animation:flash 1s ease-out 3}
 .filter-note{font-size:13px;color:var(--text-2);margin:-6px 0 12px}
 .btn-clear{font:inherit;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text-2);border-radius:8px;padding:6px 10px;cursor:pointer}
 .legend-status{margin-left:auto;display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-2)}
@@ -175,6 +199,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
       <ul class="sugg hidden" id="sugg" role="listbox"></ul>
     </div>
     <button class="btn-clear hidden" id="clearBtn" type="button">✕ กลับภาพรวม</button>
+    <button class="bell hidden" id="bellBtn" type="button" title="ดูรายชื่อที่ต้องติดตาม">🔔 ต้องติดตาม <span class="n" id="bellN">0</span></button>
   </div>
 
   <details class="card criteria" id="criteria">
@@ -187,6 +212,17 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
 
   <!-- ===== ภาพรวม ===== -->
   <section id="overview">
+    <div class="card alert" id="alertCard">
+      <div class="alert-head">
+        <h2 id="alertTitle">🚨 ต้องติดตาม</h2>
+        <label for="alertDate" class="sub">ผลวัดวันที่</label>
+        <select id="alertDate"></select>
+        <span class="al-sum" id="alertSum"></span>
+        <span class="sp"></span>
+        <button class="lnk hidden" id="notifyBtn" type="button">🔔 เปิดการแจ้งเตือนบนเครื่องนี้</button>
+      </div>
+      <div id="alertBody"></div>
+    </div>
     <div class="filter-note hidden" id="filterNote"></div>
     <div class="kpis" id="ovKpis"></div>
     <div class="grid2">
@@ -609,12 +645,88 @@ function selectPerson(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ================= ALERTS (ความดันเกินเกณฑ์ขับ ≥140/90) =================
+let alertDate = null;               // null = วันล่าสุด
+const SEEN_KEY = 'bp-alert-seen';
+const alertKey = (d, r) => `${d.name}|${d.shift}|${r.date}|${r.sys}/${r.dia}`;
+const loadSeen = () => { try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); } catch (e) { return null; } };
+const saveSeen = keys => { try { localStorage.setItem(SEEN_KEY, JSON.stringify([...keys].slice(-3000))); } catch (e) {} };
+let newKeys = new Set();            // เกินเกณฑ์ที่ยังไม่เคยเห็นบนเครื่องนี้
+
+function overReadings(date, drivers) {
+  const out = [];
+  drivers.forEach(d => d.readings.forEach(r => { if (r.date === date && LV[r.st].over) out.push({ d, r }); }));
+  return out.sort((a, b) => LV[b.r.st].sev - LV[a.r.st].sev || (b.r.sys || 0) - (a.r.sys || 0));
+}
+
+function renderAlerts() {
+  const dates = DATA.dates;
+  const sel = $('alertDate');
+  if (!dates.length) { $('alertCard').classList.add('hidden'); return; }
+  const date = alertDate && dates.includes(alertDate) ? alertDate : dates[dates.length - 1];
+  sel.innerHTML = dates.slice().reverse().map((dt, i) => `<option value="${dt}">${dLong(dt)}${i === 0 ? ' (ล่าสุด)' : ''}</option>`).join('');
+  sel.value = date;
+  const ds = byShift();
+  const measured = ds.filter(d => d.readings.some(r => r.date === date)).length;
+  const items = overReadings(date, ds);
+  const card = $('alertCard');
+  card.classList.toggle('ok', items.length === 0);
+  $('alertTitle').textContent = items.length ? `🚨 ต้องติดตาม ${items.length} คน` : '✅ ไม่มีผู้ที่ต้องติดตาม';
+  const cnt = k => items.filter(x => x.r.st === k).length;
+  $('alertSum').innerHTML = ['l6', 'l5', 'l4'].filter(k => cnt(k)).map(k => `${chip(k)}<span class="sub">${cnt(k)} คน</span>`).join(' ');
+  $('alertBody').innerHTML = items.length
+    ? `<div class="al-list">${items.map(({ d, r }) => {
+        const L = LV[r.st];
+        return `<button class="al-item${r.st === 'l6' ? ' stop' : ''}" style="border-left-color:${L.bg}" data-id="${d.id}" type="button">
+          <div class="bp">${r.sys ?? '–'}/${r.dia ?? '–'}<small>ชีพจร ${r.pulse ?? '–'}</small></div>
+          <div><div class="who">${esc(d.name)}${newKeys.has(alertKey(d, r)) ? '<span class="new">ใหม่</span>' : ''} <span class="m">${esc(d.plate)} · กะ ${esc(d.shift)}</span></div>
+          <div>${chip(r.st)}</div><div class="act">${esc(L.act)}</div></div></button>`; }).join('')}</div>`
+    : `<div class="al-ok">ผลวัด ${dLong(date)} ทั้ง ${measured} คน ความดันไม่เกิน 140/90 — ขับรถได้ตามปกติ</div>`;
+  $('alertBody').querySelectorAll('.al-item').forEach(b => b.onclick = () => selectPerson(+b.dataset.id));
+
+  // badge + title นับเฉพาะวันล่าสุด
+  const latest = overReadings(dates[dates.length - 1], ds);
+  const bell = $('bellBtn');
+  bell.classList.remove('hidden');
+  bell.classList.toggle('ok', latest.length === 0);
+  $('bellN').textContent = latest.length;
+  document.title = (latest.length ? `(${latest.length}) ` : '') + 'Dashboard ความดัน พขร.';
+  // ปุ่มเปิดการแจ้งเตือนของเบราว์เซอร์
+  const canNotify = 'Notification' in window && window.isSecureContext;
+  $('notifyBtn').classList.toggle('hidden', !canNotify || Notification.permission !== 'default');
+}
+
+// เทียบกับที่เคยเห็นบนเครื่องนี้ -> ติดป้าย "ใหม่" และเด้งแจ้งเตือน
+function checkNewAlerts(isFirst) {
+  const all = [];
+  DATA.drivers.forEach(d => d.readings.forEach(r => { if (LV[r.st].over) all.push({ d, r, k: alertKey(d, r) }); }));
+  const seen = loadSeen();
+  if (seen === null) { newKeys = new Set(); return; }          // ใช้ localStorage ไม่ได้
+  if (seen.size === 0 && isFirst) { saveSeen(all.map(x => x.k)); newKeys = new Set(); return; } // เปิดครั้งแรก: ไม่ถือว่าใหม่
+  const fresh = all.filter(x => !seen.has(x.k));
+  newKeys = new Set(fresh.map(x => x.k));
+  if (!fresh.length) return;
+  saveSeen([...seen, ...fresh.map(x => x.k)]);
+  const stop = fresh.filter(x => x.r.st === 'l6').length;
+  const title = `พบความดันเกินเกณฑ์ใหม่ ${fresh.length} รายการ` + (stop ? ` (งดขับ ${stop})` : '');
+  const body = fresh.sort((a, b) => LV[b.r.st].sev - LV[a.r.st].sev).slice(0, 5)
+    .map(x => `${x.d.name} ${x.r.sys}/${x.r.dia} ${LV[x.r.st].label}`).join('\n') + (fresh.length > 5 ? `\nและอีก ${fresh.length - 5} รายการ` : '');
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const n = new Notification(title, { body, tag: 'bp-alert', requireInteraction: stop > 0 });
+      n.onclick = () => { window.focus(); n.close(); };
+    }
+  } catch (e) {}
+  setTimeout(() => { const c = $('alertCard'); c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); }, 300);
+}
+
 function render() {
   if (!DATA) return;
   chartBase();
   $('overview').classList.toggle('hidden', !!personId);
   $('person').classList.toggle('hidden', !personId);
   $('clearBtn').classList.toggle('hidden', !personId);
+  renderAlerts();
   if (personId) renderPerson(); else renderOverview();
 }
 
@@ -640,6 +752,18 @@ qEl.addEventListener('keydown', e => {
 });
 $('qClear').onclick = () => { selectPerson(null); qEl.focus(); };
 $('clearBtn').onclick = () => selectPerson(null);
+$('alertDate').onchange = e => { alertDate = e.target.value === DATA.dates[DATA.dates.length - 1] ? null : e.target.value; renderAlerts(); };
+$('bellBtn').onclick = () => {
+  if (personId) selectPerson(null);
+  alertDate = null; renderAlerts();
+  setTimeout(() => $('alertCard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+};
+$('notifyBtn').onclick = () => {
+  try { Notification.requestPermission().then(p => {
+    renderAlerts();
+    if (p === 'granted') new Notification('เปิดการแจ้งเตือนแล้ว', { body: 'จะแจ้งเตือนเมื่อพบความดันเกินเกณฑ์ใหม่ ขณะเปิดหน้านี้ไว้' });
+  }); } catch (e) {}
+};
 
 // criteria panel
 $('critChips').innerHTML = LEVELS.map(l => chip(l.k)).join('');
@@ -650,6 +774,7 @@ $('critTable').innerHTML = `<thead><tr><th>ระดับความดัน<
 const REFRESH_MS = 5 * 60 * 1000;
 function applyData(data, first) {
   DATA = enrich(data);
+  checkNewAlerts(first);
   const f = DATA.dates[0], l = DATA.dates[DATA.dates.length-1];
   $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · พขร. ${DATA.drivers.length} คน` : 'ยังไม่มีข้อมูล';
   const g = new Date(DATA.generatedAt);
