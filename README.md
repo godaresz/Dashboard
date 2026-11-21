@@ -41,38 +41,40 @@ Dashboard แสดงผลการวัดความดันโลหิ�
 เดือน/ปีอ่านจากหัวคอลัมน์ เช่น `วันที่ 1-30 /11/26` = พฤศจิกายน 2026
 
 ## อัปเดตอัตโนมัติจากโฟลเดอร์แชร์ `\\la26032\scan\...\31.ลงข้อมูลวัดความดัน พขร. TPT`
-GitHub เข้าถึงโฟลเดอร์แชร์ในบริษัทไม่ได้ จึงต้องมี **คอมพิวเตอร์ Windows ในบริษัท 1 เครื่อง** (ที่เปิดโฟลเดอร์แชร์ได้)
-คอยตรวจโฟลเดอร์ทุก 5 นาที ถ้าไฟล์ Excel มีการเปลี่ยนแปลงจะอัปโหลดขึ้น GitHub ให้เอง → Dashboard อัปเดตภายใน ~2 นาที
+GitHub เข้าโฟลเดอร์แชร์ในบริษัทไม่ได้ จึงต้องให้ **คอมพิวเตอร์ Windows ในบริษัท 1 เครื่อง** (ที่เปิดโฟลเดอร์แชร์ได้) คอยตรวจและอัปโหลดให้
+**ไม่ต้องติดตั้งโปรแกรมใด ๆ** — ใช้ PowerShell ที่มากับ Windows อัปโหลดผ่าน GitHub API
 
 ```
 แก้ไฟล์ Excel ในโฟลเดอร์แชร์ ─► PC ในบริษัท (ตรวจทุก 5 นาที) ─► GitHub ─► Actions สร้างเว็บใหม่ ─► หน้า Dashboard รีเฟรชเอง
 ```
 
-**ติดตั้ง (ทำครั้งเดียว บนเครื่องนั้น):**
-1. ติดตั้ง [Git for Windows](https://git-scm.com/download/win) (กด Next ตามค่าเริ่มต้น)
-2. เปิด PowerShell แล้ว clone repo ไว้ในเครื่อง เช่น
-   ```powershell
-   cd $HOME\Documents
-   git clone https://github.com/godaresz/Dashboard.git
-   cd Dashboard
-   git config user.name "BP Sync"
-   git config user.email "you@example.com"
-   ```
-3. รันซิงก์ด้วยมือ 1 ครั้ง (จะมีหน้าต่างให้ login GitHub — login ครั้งเดียว ระบบจำไว้)
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File tools\sync-from-share.ps1
-   ```
-4. ตั้งให้ทำงานอัตโนมัติทุก 5 นาที
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File tools\install-sync-task.ps1
-   ```
-   - เปลี่ยนความถี่: เพิ่ม `-Minutes 10` · ยกเลิก: เพิ่ม `-Uninstall`
-   - ดูประวัติการทำงาน: `tools\sync.log`
-   - เครื่องต้องเปิดอยู่และ login ผู้ใช้นั้นไว้ (ล็อกหน้าจอได้)
-   - ถ้าเส้นทางโฟลเดอร์เปลี่ยน แก้ค่า `$Source` บรรทัดบนสุดของ `tools\sync-from-share.ps1`
+### ขั้นที่ 1 — สร้าง GitHub token (ทำบนเว็บ ครั้งเดียว)
+1. เข้า GitHub → รูปโปรไฟล์ → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**
+2. ตั้งชื่อ เช่น `bp-sync` · Expiration เลือกตามนโยบาย (เช่น 1 ปี — ครบแล้วต้องสร้างใหม่)
+3. **Repository access → Only select repositories →** `godaresz/Dashboard`
+4. **Permissions → Repository permissions → Contents: Read and write** (อย่างอื่นไม่ต้องเปิด)
+5. กด Generate แล้วคัดลอก token ไว้ (จะแสดงครั้งเดียว)
 
-สคริปต์จะคัดลอกไฟล์ `.xlsx` ทุกไฟล์ในโฟลเดอร์ (ไม่รวมโฟลเดอร์ย่อย และไฟล์ชั่วคราว `~$...`) ไปไว้ใน `data/`
-ไฟล์ที่ถูกลบออกจากโฟลเดอร์แชร์จะถูกลบออกจาก Dashboard ด้วย · หากไฟล์กำลังถูกบันทึกอยู่จะลองใหม่รอบถัดไป
+### ขั้นที่ 2 — เตรียมไฟล์บนเครื่องในบริษัท
+1. เปิด https://github.com/godaresz/Dashboard → ปุ่มเขียว **Code → Download ZIP**
+2. แตกไฟล์ ZIP แล้วเอาโฟลเดอร์ `tools` ไปไว้ในที่ถาวร เช่น `Documents\bp-sync\`
+3. ดับเบิลคลิก **`setup-token.bat`** → วาง token (คลิกขวาเพื่อวาง จะไม่เห็นตัวอักษร) → Enter
+   (token ถูกเข้ารหัสด้วย Windows — ใช้ได้เฉพาะผู้ใช้นี้บนเครื่องนี้)
+4. ดับเบิลคลิก **`sync-now.bat`** เพื่อทดสอบ → ควรขึ้น `อัปโหลดแล้ว …` หรือ `ไม่มีการเปลี่ยนแปลง`
+
+### ขั้นที่ 3 — ให้ทำงานอัตโนมัติ (เลือก 1 วิธี)
+| วิธี | ทำอย่างไร | หมายเหตุ |
+|---|---|---|
+| **A. เบื้องหลัง (แนะนำ)** | ดับเบิลคลิก `install-auto-task.bat` | ตั้ง Task Scheduler ให้รันทุก 5 นาที แม้ปิดหน้าต่าง · ยกเลิก: รัน `install-sync-task.ps1 -Uninstall` |
+| **B. เปิดหน้าต่างทิ้งไว้** | ดับเบิลคลิก `auto-sync.bat` | ใช้เมื่อบริษัทไม่ให้สร้าง Scheduled Task · ปิดหน้าต่าง = หยุด · ใส่ shortcut ไว้ในโฟลเดอร์ Startup (`Win+R` → `shell:startup`) เพื่อเปิดเองตอนเปิดเครื่อง |
+
+- เครื่องต้องเปิดอยู่และ login ผู้ใช้นั้นไว้ (ล็อกหน้าจอได้)
+- ดูประวัติการทำงาน: `tools\sync.log`
+- ถ้าเส้นทางโฟลเดอร์เปลี่ยน แก้ค่า `$Source` ช่วงบนของ `sync-from-share.ps1` (เปิดด้วย Notepad)
+- ถ้าไม่มีเครื่องไหนรันได้เลย ยังอัปเดตด้วยมือได้เสมอ: เข้า GitHub → โฟลเดอร์ `data` → **Add file → Upload files** → ลากไฟล์ Excel ใส่ → Commit
+
+สคริปต์จะเทียบไฟล์ `.xlsx` ทุกไฟล์ในโฟลเดอร์ (ไม่รวมโฟลเดอร์ย่อยและไฟล์ชั่วคราว `~$...`) กับไฟล์ใน `data/` บน GitHub
+อัปโหลดเฉพาะไฟล์ที่เปลี่ยน · ไฟล์ที่ถูกลบออกจากโฟลเดอร์แชร์จะถูกลบจาก Dashboard ด้วย · อ่านได้แม้มีคนเปิดไฟล์ Excel ค้างไว้
 > ⚠️ รองรับเฉพาะ `.xlsx` — ถ้าเป็น `.xls` (Excel รุ่นเก่า) ให้ Save As เป็น `.xlsx`
 
 ## รันบนเครื่องตัวเอง
@@ -87,6 +89,6 @@ python -m http.server -d site 8000   # เปิด http://localhost:8000
 data/                 ไฟล์ Excel ต้นฉบับ
 scripts/build_data.py แปลง Excel → site/data.json
 site/index.html       หน้า Dashboard (Chart.js)
-tools/                สคริปต์ซิงก์จากโฟลเดอร์แชร์ (Windows PowerShell)
+tools/                สคริปต์ซิงก์จากโฟลเดอร์แชร์ (PowerShell + .bat ดับเบิลคลิก, ไม่ต้องติดตั้งโปรแกรม)
 .github/workflows/    Build & deploy ขึ้น GitHub Pages อัตโนมัติ
 ```
