@@ -166,7 +166,7 @@ th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);whi
 th{font-size:12.5px;color:var(--text-2);font-weight:600;background:var(--surface);position:sticky;top:0;cursor:pointer;user-select:none}
 th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 tbody tr.click{cursor:pointer}
-tbody tr.click:hover{background:var(--surface-2)}
+tbody tr.click:hover,#ovTable tbody tr.click:hover td:first-child{background:var(--surface-2)}
 .bar{display:inline-block;height:8px;border-radius:4px;background:var(--crit);vertical-align:middle;margin-right:6px}
 .bartrack{display:inline-block;width:80px;height:8px;background:var(--surface-2);border-radius:4px;vertical-align:middle;margin-right:6px;overflow:hidden}
 .bartrack i{display:block;height:100%;background:var(--warn)}
@@ -592,7 +592,7 @@ let sortKey = 'pctHigh', sortDir = -1;
 function renderTable(ds) {
   const cols = [
     ['name','ชื่อ – สกุล',false], ['plate','ทะเบียน',false], ['shift','กะ',false],
-    ['last','ผลล่าสุด',false], ['avgSys','เฉลี่ยทั้งเดือน',true], ['avgPulse','ชีพจรเฉลี่ย',true],
+    ['last','ผลล่าสุด',false], ['avgSys','เฉลี่ยทั้งเดือน',false], ['avgPulse','ชีพจรเฉลี่ย',true],
     ['pctHigh','เกินเกณฑ์ (≥140/90)',true]
   ];
   const rank = Object.fromEntries(Object.values(LV).map(l => [l.k, l.sev]));
@@ -608,7 +608,7 @@ function renderTable(ds) {
     rows.map(d => `<tr class="click" data-id="${d.id}">
       <td><button class="namebtn" type="button" data-id="${d.id}">${esc(d.name)}</button></td><td>${esc(d.plate)}</td><td>${esc(d.shift)}</td>
       <td>${d.last ? `${chip(d.last.st)} <span class="num">${d.last.sys ?? '–'}/${d.last.dia ?? '–'}</span> <span class="sub">${dShort(d.last.date)}</span>` : '–'}</td>
-      <td class="num">${r0(d.avgSys)}/${r0(d.avgDia)}</td>
+      <td>${d.avgSys != null ? `${chip(d.avgSt)} <span class="num">${r0(d.avgSys)}/${r0(d.avgDia)}</span>` : '–'}</td>
       <td class="num">${r0(d.avgPulse)}</td>
       <td class="num"><span class="bartrack"><i style="width:${Math.round(d.pctHigh*100)}%;background:${(LV[d.worst].over ? LV[d.worst] : LV.l4).bg}"></i></span>${d.nHigh}/${d.n} ครั้ง</td>
     </tr>`).join('') + (rows.length ? '' : `<tr><td colspan="${cols.length}" class="empty">ไม่พบพนักงานที่ตรงกับคำค้น</td></tr>`) + '</tbody>';
