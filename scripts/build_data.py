@@ -40,6 +40,41 @@ def to_num(v):
     return int(round(n)) if n > 0 else None
 
 
+def to_date(v, year, month):
+    """แปลงหัวคอลัมน์วันที่เป็น date — รองรับ
+    - เลขวัน (2, 3, ...) ใช้เดือน/ปีจากหัว "วันที่ 1-30 /11/26"
+    - วันที่จริงของ Excel (datetime/date)
+    - ข้อความ "2/11/2026", "2/11/26", "2/11/2569" (วัน/เดือน/ปี, ปี พ.ศ. แปลงให้)
+    """
+    if v is None or v == "":
+        return None
+    if isinstance(v, datetime):
+        v = v.date()
+    if isinstance(v, date):
+        return date(v.year - 543, v.month, v.day) if v.year > 2400 else v
+    if isinstance(v, (int, float)):
+        d = int(v)
+        if 1 <= d <= 31:
+            try:
+                return date(year, month, d)
+            except ValueError:
+                return None
+        return None
+    m = re.fullmatch(r"\s*(\d{1,2})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(\d{2,4})\s*", str(v))
+    if m:
+        d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if y < 100:
+            y += 2000
+        if y > 2400:
+            y -= 543
+        try:
+            return date(y, mo, d)
+        except ValueError:
+            return None
+    n = to_num(v)
+    return to_date(n, year, month) if n is not None else None
+
+
 def parse_month(text, fallback):
     """'วันที่ 1-30 /11/26' -> (2026, 11)"""
     m = re.search(r"/\s*(\d{1,2})\s*/\s*(\d{2,4})", text or "")
@@ -81,15 +116,10 @@ def parse_sheet(ws, fallback_ym):
     current_day = None
     for c in range(len(sub_row)):
         if c < len(day_row) and day_row[c] is not None:
-            d = to_num(day_row[c])
-            current_day = d if d and 1 <= d <= 31 else None
+            current_day = to_date(day_row[c], year, month)
         key = SUB_LABELS.get(clean(sub_row[c]))
         if key and current_day:
-            try:
-                iso = date(year, month, current_day).isoformat()
-            except ValueError:
-                continue
-            colmap[c] = (iso, key)
+            colmap[c] = (current_day.isoformat(), key)
 
     people = []
     for r in rows[hdr_idx + 3:]:
@@ -163,6 +193,11 @@ def main():
             "note": p["note"],
             "readings": readings,
         })
+
+    total = sum(len(d["readings"]) for d in drivers)
+    if total == 0:
+        # อ่านไม่ได้สักรายการ (เช่น รูปแบบไฟล์เปลี่ยน) -> ให้ build ล้ม เว็บจะคงข้อมูลชุดเดิมไว้แทนการขึ้นหน้าว่าง
+        sys.exit("ไม่พบข้อมูลการวัดเลย — ตรวจรูปแบบหัวตาราง (ชื่อพนักงานขับรถ / วันที่ / บน-ล่าง-ชีพจร)")
 
     out = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
