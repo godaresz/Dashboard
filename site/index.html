@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard ความดัน พขร.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f4f1; --surface:#fcfcfb; --surface-2:#f0efec; --border:#e2e1dc;
+  --text:#0b0b0b; --text-2:#52514e; --text-3:#7a7974;
+  --sys:#2a78d6; --dia:#eb6834; --pulse:#1baf7a; --ref:#9a9993;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --good-bg:#e3f4e3; --warn-bg:#fdf0d2; --crit-bg:#f9dddd; --none-bg:#f0efec;
+  --good-ink:#0b6b0b; --warn-ink:#7a5200; --crit-ink:#9e2020;
+  --accent:#2a78d6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#242422; --border:#33332f;
+    --text:#f0efec; --text-2:#c3c2b7; --text-3:#8f8e86;
+    --sys:#3987e5; --dia:#d95926; --pulse:#199e70; --ref:#6d6c66;
+    --good-bg:#16351a; --warn-bg:#3d2f0f; --crit-bg:#451b1b; --none-bg:#242422;
+    --good-ink:#7bd67b; --warn-ink:#f7c75a; --crit-ink:#f19a9a;
+    --accent:#3987e5;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#242422; --border:#33332f;
+  --text:#f0efec; --text-2:#c3c2b7; --text-3:#8f8e86;
+  --sys:#3987e5; --dia:#d95926; --pulse:#199e70; --ref:#6d6c66;
+  --good-bg:#16351a; --warn-bg:#3d2f0f; --crit-bg:#451b1b; --none-bg:#242422;
+  --good-ink:#7bd67b; --warn-ink:#f7c75a; --crit-ink:#f19a9a;
+  --accent:#3987e5;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:"IBM Plex Sans Thai",system-ui,sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 48px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+h1{font-size:24px;margin:0;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--text-2);font-size:14px}
+.btn-theme{background:var(--surface);border:1px solid var(--border);color:var(--text-2);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:13px}
+
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:16px;position:sticky;top:8px;z-index:5}
+.filters label{font-size:13px;color:var(--text-2)}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:3px}
+.seg button{border:0;background:transparent;font:inherit;font-size:14px;padding:5px 14px;border-radius:6px;cursor:pointer;color:var(--text-2)}
+.seg button.on{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-width:260px;max-width:100%}
+.btn-clear{font:inherit;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text-2);border-radius:8px;padding:6px 10px;cursor:pointer}
+.legend-status{margin-left:auto;display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-2)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.kpi .k{font-size:13px;color:var(--text-2)}
+.kpi .v{font-size:30px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:15px;font-weight:500;color:var(--text-2);margin-left:4px}
+.kpi .h{font-size:12.5px;color:var(--text-3)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;min-width:0}
+.card h2{font-size:16px;margin:0 0 2px;font-weight:600}
+.card .desc{font-size:13px;color:var(--text-2);margin-bottom:12px}
+.chart-box{position:relative;height:300px}
+.chart-box.tall{height:340px}
+.serieslegend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--text-2);margin-bottom:6px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.sw.line{height:3px;border-radius:2px;vertical-align:3px;width:16px}
+.sw.dash{height:0;border-top:2px dashed var(--ref);width:16px;vertical-align:3px;border-radius:0}
+
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chip.good{background:var(--good-bg);color:var(--good-ink)}
+.chip.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.chip.crit{background:var(--crit-bg);color:var(--crit-ink)}
+.chip.none{background:var(--none-bg);color:var(--text-3)}
+
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+th{font-size:12.5px;color:var(--text-2);font-weight:600;background:var(--surface);position:sticky;top:0;cursor:pointer;user-select:none}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--surface-2)}
+.bar{display:inline-block;height:8px;border-radius:4px;background:var(--crit);vertical-align:middle;margin-right:6px}
+.bartrack{display:inline-block;width:80px;height:8px;background:var(--surface-2);border-radius:4px;vertical-align:middle;margin-right:6px;overflow:hidden}
+.bartrack i{display:block;height:100%;background:var(--warn)}
+.bartrack i.crit{background:var(--crit)}
+
+/* heatmap */
+.hm{border-collapse:separate;border-spacing:2px;font-size:12px}
+.hm th,.hm td{border:0;padding:0}
+.hm th{background:transparent;font-weight:500;color:var(--text-3);text-align:center;padding:2px 0;cursor:default;position:static}
+.hm td.nm{padding:0 8px 0 0;font-size:13px;color:var(--text);cursor:pointer;position:sticky;left:0;background:var(--surface);z-index:1}
+.hm td.nm:hover{text-decoration:underline}
+.hm td.c{width:46px;min-width:46px;height:34px;text-align:center;border-radius:4px;line-height:1.1;font-variant-numeric:tabular-nums;cursor:default}
+.hm td.c b{display:block;font-weight:600;font-size:12px}
+.hm td.c span{font-size:11px;opacity:.85}
+.hm td.good{background:var(--good-bg);color:var(--good-ink)}
+.hm td.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.hm td.crit{background:var(--crit-bg);color:var(--crit-ink)}
+.hm td.none{background:var(--none-bg)}
+.hm tr.sep td{height:10px;background:transparent}
+
+.person-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:12px}
+.person-head .nm{font-size:22px;font-weight:700}
+.person-head .meta{color:var(--text-2);font-size:14px}
+.hidden{display:none!important}
+.tip{position:fixed;pointer-events:none;background:var(--text);color:var(--surface);font-size:12.5px;padding:6px 9px;border-radius:6px;z-index:50;white-space:nowrap}
+footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
+@media (max-width:600px){
+  .filters{position:static}
+  select{min-width:0;width:100%}
+  .kpis{grid-template-columns:1fr 1fr;gap:8px}
+  .kpi .v{font-size:24px}
+  h1{font-size:20px}
+}
+.empty{color:var(--text-3);padding:24px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>🩺 Dashboard ผลวัดความดัน พนักงานขับรถ</h1>
+      <div class="sub" id="period">กำลังโหลดข้อมูล…</div>
+    </div>
+    <button class="btn-theme" id="themeBtn" type="button">◐ สลับธีม</button>
+  </header>
+
+  <div class="filters">
+    <label>กะ</label>
+    <div class="seg" id="shiftSeg">
+      <button data-v="ALL" class="on">ทั้งหมด</button><button data-v="A">กะ A</button><button data-v="B">กะ B</button>
+    </div>
+    <label for="personSel">พนักงาน</label>
+    <select id="personSel"></select>
+    <button class="btn-clear hidden" id="clearBtn" type="button">✕ กลับภาพรวม</button>
+    <div class="legend-status">
+      <span><span class="chip good">✓ ปกติ</span> &lt;140/90</span>
+      <span><span class="chip warn">▲ สูง</span> ≥140 หรือ ≥90</span>
+      <span><span class="chip crit">⚠ สูงมาก</span> ≥160 หรือ ≥100</span>
+    </div>
+  </div>
+
+  <!-- ===== ภาพรวม ===== -->
+  <section id="overview">
+    <div class="kpis" id="ovKpis"></div>
+    <div class="grid2">
+      <div class="card">
+        <h2>จำนวนครั้งที่วัด แยกตามระดับ รายวัน</h2>
+        <div class="desc">แต่ละแท่ง = จำนวน พขร. ที่วัดในวันนั้น</div>
+        <div class="serieslegend"><span><i class="sw" style="background:var(--good)"></i>ปกติ</span><span><i class="sw" style="background:var(--warn)"></i>สูง</span><span><i class="sw" style="background:var(--crit)"></i>สูงมาก</span></div>
+        <div class="chart-box"><canvas id="ovDaily"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>ค่าเฉลี่ยความดันทั้งกลุ่ม รายวัน</h2>
+        <div class="desc">เส้นประ = เกณฑ์ 140 (บน) และ 90 (ล่าง)</div>
+        <div class="serieslegend"><span><i class="sw line" style="background:var(--sys)"></i>ตัวบน (Systolic)</span><span><i class="sw line" style="background:var(--dia)"></i>ตัวล่าง (Diastolic)</span><span><i class="sw dash"></i>เกณฑ์</span></div>
+        <div class="chart-box"><canvas id="ovAvg"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>สรุปรายบุคคล</h2>
+      <div class="desc">คลิกที่ชื่อเพื่อดูกราฟรายคน · คลิกหัวคอลัมน์เพื่อเรียงลำดับ</div>
+      <div class="tbl-wrap"><table id="ovTable"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>ตารางสีรายวัน (บน/ล่าง)</h2>
+      <div class="desc">สีแสดงระดับความดันของแต่ละวัน · ช่องเทา = ไม่มีข้อมูล</div>
+      <div class="tbl-wrap"><table class="hm" id="heatmap"></table></div>
+    </div>
+  </section>
+
+  <!-- ===== รายบุคคล ===== -->
+  <section id="person" class="hidden">
+    <div class="card">
+      <div class="person-head">
+        <div class="nm" id="pName"></div>
+        <div class="meta" id="pMeta"></div>
+        <span id="pChip"></span>
+      </div>
+      <div class="kpis" id="pKpis" style="margin-bottom:0"></div>
+    </div>
+    <div class="card">
+      <h2>แนวโน้มความดันโลหิต</h2>
+      <div class="desc">จุดสีแดงเข้ม = วันที่เกินเกณฑ์ · เส้นประ = เกณฑ์ 140 / 90</div>
+      <div class="serieslegend"><span><i class="sw line" style="background:var(--sys)"></i>ตัวบน (Systolic)</span><span><i class="sw line" style="background:var(--dia)"></i>ตัวล่าง (Diastolic)</span><span><i class="sw dash"></i>เกณฑ์</span></div>
+      <div class="chart-box tall"><canvas id="pBP"></canvas></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>ชีพจร (ครั้ง/นาที)</h2>
+        <div class="desc">ช่วงปกติ 60–100 (แถบเทา)</div>
+        <div class="chart-box"><canvas id="pPulse"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>บันทึกรายวัน</h2>
+        <div class="desc">ล่าสุดอยู่ด้านบน</div>
+        <div class="tbl-wrap" style="max-height:300px;overflow-y:auto"><table id="pTable"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+<div class="tip hidden" id="tip"></div>
+
+<script>
+(() => {
+'use strict';
+const TH_MONTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TH_DOW = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const STATUS = {
+  good:{label:'ปกติ', icon:'✓'},
+  warn:{label:'สูง', icon:'▲'},
+  crit:{label:'สูงมาก', icon:'⚠'},
+  none:{label:'ไม่มีข้อมูล', icon:'–'}
+};
+const statusOf = (s, d) => {
+  if (s == null && d == null) return 'none';
+  if ((s||0) >= 160 || (d||0) >= 100) return 'crit';
+  if ((s||0) >= 140 || (d||0) >= 90) return 'warn';
+  return 'good';
+};
+const chip = st => `<span class="chip ${st}">${STATUS[st].icon} ${STATUS[st].label}</span>`;
+const pd = iso => { const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d); };
+const dShort = iso => { const d = pd(iso); return `${d.getDate()} ${TH_MONTH[d.getMonth()]}`; };
+const dLong = iso => { const d = pd(iso); return `${TH_DOW[d.getDay()]} ${d.getDate()} ${TH_MONTH[d.getMonth()]} ${d.getFullYear()+543}`; };
+const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+const r0 = v => v == null ? '–' : Math.round(v);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+let DATA = null, shift = 'ALL', personId = null;
+const charts = {};
+const $ = id => document.getElementById(id);
+
+// theme toggle
+(() => {
+  let saved = null; try { saved = localStorage.getItem('bp-theme'); } catch(e) {}
+  if (saved) document.documentElement.dataset.theme = saved;
+  $('themeBtn').onclick = () => {
+    const cur = document.documentElement.dataset.theme ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('bp-theme', next); } catch(e) {}
+    render();
+  };
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+})();
+
+function enrich(data) {
+  data.drivers.forEach(d => {
+    d.readings.forEach(r => r.st = statusOf(r.sys, r.dia));
+    const S = d.readings.map(r=>r.sys).filter(Boolean), D = d.readings.map(r=>r.dia).filter(Boolean), P = d.readings.map(r=>r.pulse).filter(Boolean);
+    d.avgSys = avg(S); d.avgDia = avg(D); d.avgPulse = avg(P);
+    d.maxSys = S.length ? Math.max(...S) : null; d.maxDia = D.length ? Math.max(...D) : null;
+    d.n = d.readings.length;
+    d.nWarn = d.readings.filter(r=>r.st==='warn').length;
+    d.nCrit = d.readings.filter(r=>r.st==='crit').length;
+    d.nHigh = d.nWarn + d.nCrit;
+    d.pctHigh = d.n ? d.nHigh / d.n : 0;
+    d.last = d.readings[d.readings.length-1] || null;
+    d.avgSt = statusOf(d.avgSys, d.avgDia);
+  });
+  data.dates = [...new Set(data.drivers.flatMap(d => d.readings.map(r => r.date)))].sort();
+  return data;
+}
+
+const visible = () => DATA.drivers.filter(d => shift === 'ALL' || d.shift === shift);
+
+function fillSelect() {
+  const sel = $('personSel');
+  const list = visible();
+  sel.innerHTML = '<option value="">— ดูภาพรวมทั้งหมด —</option>' +
+    ['A','B','-'].map(s => {
+      const g = list.filter(d => d.shift === s);
+      if (!g.length) return '';
+      return `<optgroup label="${s === '-' ? 'ไม่ระบุกะ' : 'กะ ' + s}">` +
+        g.slice().sort((a,b)=>a.name.localeCompare(b.name,'th')).map(d =>
+          `<option value="${d.id}">${esc(d.name)} (${esc(d.plate)})</option>`).join('') + '</optgroup>';
+    }).join('');
+  if (personId && !list.some(d => d.id === personId)) personId = null;
+  sel.value = personId ? String(personId) : '';
+}
+
+// ---- Chart.js defaults
+function chartBase() {
+  Chart.defaults.font.family = '"IBM Plex Sans Thai", system-ui, sans-serif';
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = css('--text-2');
+  Chart.defaults.borderColor = css('--border');
+}
+function tooltipOpts(extra) {
+  return Object.assign({
+    backgroundColor: css('--text'), titleColor: css('--surface'), bodyColor: css('--surface'),
+    padding: 10, cornerRadius: 6, boxPadding: 4, usePointStyle: true,
+    titleFont: { weight: '600' }
+  }, extra || {});
+}
+function mk(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id), cfg);
+}
+const refLine = (label, value, n) => ({
+  label, data: Array(n).fill(value), borderColor: css('--ref'), borderWidth: 1.5, borderDash: [6,4],
+  pointRadius: 0, pointHoverRadius: 0, fill: false, order: 9, isRef: true
+});
+
+// ================= OVERVIEW =================
+function renderOverview() {
+  const ds = visible();
+  const all = ds.flatMap(d => d.readings);
+  const nHigh = all.filter(r => r.st !== 'good').length;
+  const nCrit = all.filter(r => r.st === 'crit').length;
+  const watch = ds.filter(d => d.avgSt !== 'good').length;
+  const lastDate = DATA.dates[DATA.dates.length-1];
+  $('ovKpis').innerHTML = [
+    ['พนักงานขับรถ', ds.length, 'คน', `กะ A ${ds.filter(d=>d.shift==='A').length} · กะ B ${ds.filter(d=>d.shift==='B').length}`],
+    ['จำนวนครั้งที่วัด', all.length, 'ครั้ง', `${DATA.dates.length} วันทำการ`],
+    ['ครั้งที่ความดันสูง', all.length ? Math.round(nHigh/all.length*100) : 0, '%', `${nHigh} ครั้ง · สูงมาก ${nCrit} ครั้ง`],
+    ['ค่าเฉลี่ยเกินเกณฑ์', watch, 'คน', 'ควรติดตาม / พบแพทย์'],
+  ].map(([k,v,u,h]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div></div>`).join('');
+
+  // daily stacked
+  const labels = DATA.dates.map(dShort);
+  const cnt = st => DATA.dates.map(dt => ds.reduce((a,d) => a + d.readings.filter(r => r.date===dt && r.st===st).length, 0));
+  const gap = css('--surface');
+  const bar = (label, st, color) => ({ label, data: cnt(st), backgroundColor: color, borderColor: gap, borderWidth: {top:2}, borderRadius: 0, borderSkipped: false, maxBarThickness: 28 });
+  mk('ovDaily', {
+    type: 'bar',
+    data: { labels, datasets: [bar('ปกติ','good',css('--good')), bar('สูง','warn',css('--warn')), bar('สูงมาก','crit',css('--crit'))] },
+    options: {
+      maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: tooltipOpts({ callbacks: {
+        title: it => dLong(DATA.dates[it[0].dataIndex]),
+        label: c => ` ${c.dataset.label}: ${c.raw} คน`,
+        footer: it => `รวม ${it.reduce((a,c)=>a+c.raw,0)} คน`
+      }}) },
+      scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'คน' } } }
+    }
+  });
+
+  // group avg
+  const meanOf = (k) => DATA.dates.map(dt => { const v = ds.flatMap(d => d.readings.filter(r=>r.date===dt && r[k]).map(r=>r[k])); return v.length ? Math.round(avg(v)*10)/10 : null; });
+  mk('ovAvg', {
+    type: 'line',
+    data: { labels, datasets: [
+      lineDs('ตัวบน', meanOf('sys'), css('--sys')),
+      lineDs('ตัวล่าง', meanOf('dia'), css('--dia')),
+      refLine('เกณฑ์ 140', 140, labels.length), refLine('เกณฑ์ 90', 90, labels.length)
+    ]},
+    options: lineOpts({ min: 60, max: 170 }, it => dLong(DATA.dates[it[0].dataIndex]), ' mmHg')
+  });
+
+  renderTable(ds);
+  renderHeatmap(ds);
+}
+
+function lineDs(label, data, color, extra) {
+  return Object.assign({ label, data, borderColor: color, backgroundColor: color, borderWidth: 2,
+    pointRadius: 4, pointHoverRadius: 7, pointBackgroundColor: color, pointBorderColor: css('--surface'), pointBorderWidth: 2,
+    tension: .25, spanGaps: true }, extra || {});
+}
+function lineOpts(y, titleFn, unit) {
+  return {
+    maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: tooltipOpts({
+      filter: c => !c.dataset.isRef,
+      callbacks: { title: titleFn, label: c => ` ${c.dataset.label}: ${c.formattedValue}${unit}` } }) },
+    scales: { x: { grid: { display: false } }, y: Object.assign({ grid: { color: css('--border') }, title: { display: true, text: unit.trim() } }, y) }
+  };
+}
+
+let sortKey = 'pctHigh', sortDir = -1;
+function renderTable(ds) {
+  const cols = [
+    ['name','ชื่อ – สกุล',false], ['plate','ทะเบียน',false], ['shift','กะ',false],
+    ['avgSys','เฉลี่ย บน/ล่าง',true], ['avgPulse','ชีพจรเฉลี่ย',true], ['maxSys','สูงสุด',true],
+    ['pctHigh','ครั้งที่สูง',true], ['n','วัด (ครั้ง)',true], ['avgSt','สถานะ (เฉลี่ย)',false], ['last','ล่าสุด',false]
+  ];
+  const rank = { good:0, warn:1, crit:2, none:-1 };
+  const rows = ds.slice().sort((a,b) => {
+    let x = a[sortKey], y = b[sortKey];
+    if (sortKey === 'avgSt') { x = rank[x]; y = rank[y]; }
+    if (sortKey === 'last') { x = a.last ? a.last.date : ''; y = b.last ? b.last.date : ''; }
+    if (typeof x === 'string') return x.localeCompare(y, 'th') * sortDir;
+    return ((x ?? -1) - (y ?? -1)) * sortDir || b.avgSys - a.avgSys;
+  });
+  $('ovTable').innerHTML = `<thead><tr>${cols.map(([k,l,num]) =>
+      `<th data-k="${k}" class="${num?'num':''}">${l}${k===sortKey ? (sortDir>0?' ▲':' ▼') : ''}</th>`).join('')}</tr></thead><tbody>` +
+    rows.map(d => `<tr class="click" data-id="${d.id}">
+      <td><b>${esc(d.name)}</b></td><td>${esc(d.plate)}</td><td>${esc(d.shift)}</td>
+      <td class="num">${r0(d.avgSys)}/${r0(d.avgDia)}</td>
+      <td class="num">${r0(d.avgPulse)}</td>
+      <td class="num">${d.maxSys ?? '–'}/${d.maxDia ?? '–'}</td>
+      <td class="num"><span class="bartrack"><i class="${d.nCrit ? 'crit':''}" style="width:${Math.round(d.pctHigh*100)}%"></i></span>${d.nHigh}/${d.n}</td>
+      <td class="num">${d.n}</td>
+      <td>${chip(d.avgSt)}</td>
+      <td>${d.last ? `${dShort(d.last.date)} · ${d.last.sys ?? '–'}/${d.last.dia ?? '–'}` : '–'}</td>
+    </tr>`).join('') + '</tbody>';
+  $('ovTable').querySelectorAll('th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k; if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = (k==='name'||k==='plate'||k==='shift') ? 1 : -1; }
+    renderTable(visible());
+  });
+  $('ovTable').querySelectorAll('tbody tr').forEach(tr => tr.onclick = () => selectPerson(+tr.dataset.id));
+}
+
+function renderHeatmap(ds) {
+  const dates = DATA.dates;
+  let html = `<thead><tr><th></th>${dates.map(dt => { const d = pd(dt); return `<th>${TH_DOW[d.getDay()]}<br>${d.getDate()}</th>`; }).join('')}</tr></thead><tbody>`;
+  let prev = null;
+  ds.forEach(d => {
+    if (prev !== null && prev !== d.shift) html += `<tr class="sep"><td colspan="${dates.length+1}"></td></tr>`;
+    prev = d.shift;
+    const by = Object.fromEntries(d.readings.map(r => [r.date, r]));
+    html += `<tr><td class="nm" data-id="${d.id}">${esc(d.name)} <span style="color:var(--text-3)">(${esc(d.shift)})</span></td>` +
+      dates.map(dt => { const r = by[dt]; if (!r) return `<td class="c none" data-tip="${esc(d.name)} · ${dLong(dt)} · ไม่มีข้อมูล"></td>`;
+        return `<td class="c ${r.st}" data-tip="${esc(d.name)} · ${dLong(dt)} · ${r.sys ?? '–'}/${r.dia ?? '–'} mmHg · ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}"><b>${r.sys ?? '–'}</b><span>${r.dia ?? '–'}</span></td>`; }).join('') + '</tr>';
+  });
+  $('heatmap').innerHTML = html + '</tbody>';
+  $('heatmap').querySelectorAll('td.nm').forEach(td => td.onclick = () => selectPerson(+td.dataset.id));
+}
+
+// tooltip for heatmap cells
+document.addEventListener('mousemove', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]'); const tip = $('tip');
+  if (!t) { tip.classList.add('hidden'); return; }
+  tip.textContent = t.dataset.tip; tip.classList.remove('hidden');
+  const w = tip.offsetWidth; let x = e.clientX + 12; if (x + w > innerWidth - 8) x = e.clientX - w - 12;
+  tip.style.left = x + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+});
+
+// ================= PERSON =================
+function renderPerson() {
+  const d = DATA.drivers.find(x => x.id === personId);
+  if (!d) return;
+  $('pName').textContent = d.name;
+  $('pMeta').textContent = `ทะเบียน ${d.plate || '–'} · กะ ${d.shift}${d.dept ? ' · ' + d.dept : ''}${d.note ? ' · ' + d.note : ''}`;
+  $('pChip').innerHTML = chip(d.avgSt);
+  const minP = d.readings.map(r=>r.pulse).filter(Boolean);
+  $('pKpis').innerHTML = [
+    ['ความดันเฉลี่ย', `${r0(d.avgSys)}/${r0(d.avgDia)}`, 'mmHg', STATUS[d.avgSt].label],
+    ['ล่าสุด', d.last ? `${d.last.sys ?? '–'}/${d.last.dia ?? '–'}` : '–', 'mmHg', d.last ? dLong(d.last.date) : ''],
+    ['สูงสุด (บน/ล่าง)', `${d.maxSys ?? '–'}/${d.maxDia ?? '–'}`, 'mmHg', 'ค่าสูงสุดของแต่ละตัว'],
+    ['วันที่ความดันสูง', d.nHigh, `/ ${d.n} วัน`, `สูงมาก ${d.nCrit} วัน`],
+    ['ชีพจรเฉลี่ย', r0(d.avgPulse), 'ครั้ง/นาที', minP.length ? `ต่ำสุด ${Math.min(...minP)} · สูงสุด ${Math.max(...minP)}` : ''],
+  ].map(([k,v,u,h]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div></div>`).join('');
+
+  const dates = DATA.dates;
+  const by = Object.fromEntries(d.readings.map(r => [r.date, r]));
+  const labels = dates.map(dShort);
+  const ser = k => dates.map(dt => by[dt] ? (by[dt][k] ?? null) : null);
+  const crit = css('--crit');
+  const ptColor = (k, base, lim) => dates.map(dt => by[dt] && by[dt][k] >= lim ? crit : base);
+  const sysC = css('--sys'), diaC = css('--dia');
+  mk('pBP', {
+    type: 'line',
+    data: { labels, datasets: [
+      lineDs('ตัวบน', ser('sys'), sysC, { pointBackgroundColor: ptColor('sys', sysC, 140), pointRadius: dates.map(dt => by[dt] && by[dt].sys >= 140 ? 6 : 4) }),
+      lineDs('ตัวล่าง', ser('dia'), diaC, { pointBackgroundColor: ptColor('dia', diaC, 90), pointRadius: dates.map(dt => by[dt] && by[dt].dia >= 90 ? 6 : 4) }),
+      refLine('เกณฑ์ 140', 140, labels.length), refLine('เกณฑ์ 90', 90, labels.length)
+    ]},
+    options: (() => { const o = lineOpts({ suggestedMin: 60, suggestedMax: 170 }, it => dLong(dates[it[0].dataIndex]), ' mmHg');
+      o.plugins.tooltip.callbacks.footer = it => { const r = by[dates[it[0].dataIndex]]; return r ? `ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}` : 'ไม่มีข้อมูล'; };
+      return o; })()
+  });
+
+  const pulseC = css('--pulse');
+  const band = css('--surface-2');
+  mk('pPulse', {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'ขอบบน', data: Array(labels.length).fill(100), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: band, isRef: true, order: 10 },
+      { label: 'ขอบล่าง', data: Array(labels.length).fill(60), borderWidth: 0, pointRadius: 0, fill: false, isRef: true, order: 10 },
+      lineDs('ชีพจร', ser('pulse'), pulseC)
+    ]},
+    options: lineOpts({ suggestedMin: 40, suggestedMax: 120 }, it => dLong(dates[it[0].dataIndex]), ' ครั้ง/นาที')
+  });
+
+  $('pTable').innerHTML = `<thead><tr><th>วันที่</th><th class="num">บน</th><th class="num">ล่าง</th><th class="num">ชีพจร</th><th>ระดับ</th></tr></thead><tbody>` +
+    (d.readings.length ? d.readings.slice().reverse().map(r => `<tr><td>${dLong(r.date)}</td><td class="num">${r.sys ?? '–'}</td><td class="num">${r.dia ?? '–'}</td><td class="num">${r.pulse ?? '–'}</td><td>${chip(r.st)}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">ยังไม่มีข้อมูลการวัด</td></tr>`) + '</tbody>';
+}
+
+function selectPerson(id) {
+  personId = id || null;
+  $('personSel').value = personId ? String(personId) : '';
+  try { history.replaceState(null, '', personId ? '#p' + personId : location.pathname + location.search); } catch(e) {}
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function render() {
+  if (!DATA) return;
+  chartBase();
+  $('overview').classList.toggle('hidden', !!personId);
+  $('person').classList.toggle('hidden', !personId);
+  $('clearBtn').classList.toggle('hidden', !personId);
+  if (personId) renderPerson(); else renderOverview();
+}
+
+$('shiftSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
+  shift = b.dataset.v;
+  $('shiftSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  fillSelect(); render();
+});
+$('personSel').onchange = e => selectPerson(+e.target.value);
+$('clearBtn').onclick = () => selectPerson(null);
+
+fetch('data.json', { cache: 'no-store' }).then(r => r.json()).then(data => {
+  DATA = enrich(data);
+  const f = DATA.dates[0], l = DATA.dates[DATA.dates.length-1];
+  $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · พขร. ${DATA.drivers.length} คน` : 'ยังไม่มีข้อมูล';
+  const g = new Date(DATA.generatedAt);
+  $('foot').textContent = `แหล่งข้อมูล: ${DATA.sources.join(', ')} · อัปเดตล่าสุด ${g.toLocaleString('th-TH')} · เกณฑ์อ้างอิง: ปกติ <140/90 mmHg, สูง ≥140/90, สูงมาก ≥160/100`;
+  const m = location.hash.match(/^#p(\d+)$/); if (m && DATA.drivers.some(d => d.id === +m[1])) personId = +m[1];
+  fillSelect(); render();
+}).catch(err => { $('period').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err; });
+})();
+</script>
+</body>
+</html>
