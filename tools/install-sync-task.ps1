@@ -1,6 +1,7 @@
 ﻿# ------------------------------------------------------------------
-#  ตั้งให้ Windows รัน sync-from-share.ps1 อัตโนมัติทุก ๆ N นาที
-#  (Task Scheduler ชื่อ "BP-Dashboard-Sync")
+#  ตั้งให้ Windows รัน sync-from-share.ps1 อัตโนมัติทุก ๆ N นาที (เบื้องหลัง ไม่ต้องเปิดหน้าต่างค้าง)
+#  ใช้ Task Scheduler ที่มากับ Windows (ชื่องาน "BP-Dashboard-Sync") — ไม่ต้องติดตั้งโปรแกรมเพิ่ม
+#  ถ้าบริษัทไม่อนุญาตให้สร้าง Scheduled Task ให้ใช้ auto-sync.bat แทน
 #
 #  วิธีใช้:  powershell -ExecutionPolicy Bypass -File tools\install-sync-task.ps1
 #  ยกเลิก:   powershell -ExecutionPolicy Bypass -File tools\install-sync-task.ps1 -Uninstall
