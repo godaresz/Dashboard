@@ -53,6 +53,19 @@ h1{font-size:24px;margin:0;font-weight:700;letter-spacing:-.01em}
 .seg button{border:0;background:transparent;font:inherit;font-size:14px;padding:5px 14px;border-radius:6px;cursor:pointer;color:var(--text-2)}
 .seg button.on{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-width:260px;max-width:100%}
+.search{position:relative;flex:0 1 340px;min-width:240px}
+.search input{width:100%;font:inherit;font-size:14px;padding:7px 30px 7px 32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.search input::-webkit-search-cancel-button{display:none;-webkit-appearance:none}
+.search input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.search .ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none;font-size:14px}
+.search .x{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--text-3);cursor:pointer;font-size:15px;padding:2px 6px}
+.sugg{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:340px;overflow-y:auto;z-index:20;margin:0;padding:4px;list-style:none}
+.sugg li{padding:7px 10px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:14px}
+.sugg li.act,.sugg li:hover{background:var(--surface-2)}
+.sugg li .m{color:var(--text-3);font-size:12.5px;white-space:nowrap}
+.sugg li mark{background:var(--warn-bg);color:inherit;border-radius:2px}
+.sugg .no{color:var(--text-3);cursor:default}
+.filter-note{font-size:13px;color:var(--text-2);margin:-6px 0 12px}
 .btn-clear{font:inherit;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text-2);border-radius:8px;padding:6px 10px;cursor:pointer}
 .legend-status{margin-left:auto;display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-2)}
 
@@ -139,8 +152,12 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
     <div class="seg" id="shiftSeg">
       <button data-v="ALL" class="on">ทั้งหมด</button><button data-v="A">กะ A</button><button data-v="B">กะ B</button>
     </div>
-    <label for="personSel">พนักงาน</label>
-    <select id="personSel"></select>
+    <div class="search" role="combobox" aria-expanded="false" aria-haspopup="listbox" id="searchBox">
+      <span class="ico">🔍</span>
+      <input id="q" type="search" autocomplete="off" placeholder="พิมพ์ชื่อ หรือทะเบียนรถ เช่น สมชาย, 71-3416" aria-label="ค้นหาชื่อหรือทะเบียน" aria-controls="sugg">
+      <button class="x hidden" id="qClear" type="button" aria-label="ล้างคำค้น">✕</button>
+      <ul class="sugg hidden" id="sugg" role="listbox"></ul>
+    </div>
     <button class="btn-clear hidden" id="clearBtn" type="button">✕ กลับภาพรวม</button>
     <div class="legend-status">
       <span><span class="chip good">✓ ปกติ</span> &lt;140/90</span>
@@ -151,6 +168,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
 
   <!-- ===== ภาพรวม ===== -->
   <section id="overview">
+    <div class="filter-note hidden" id="filterNote"></div>
     <div class="kpis" id="ovKpis"></div>
     <div class="grid2">
       <div class="card">
@@ -277,21 +295,52 @@ function enrich(data) {
   return data;
 }
 
-const visible = () => DATA.drivers.filter(d => shift === 'ALL' || d.shift === shift);
+// ---- search (name or plate)
+let query = '';
+const norm = s => String(s || '').toLowerCase().replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '').replace(/[\s\-–.]/g, '');
+const matches = (d, q) => !q || norm(d.name).includes(q) || norm(d.plate).includes(q) || norm(d.name.replace(/^(นาย|นางสาว|นาง)/,'')).includes(q);
+const byShift = () => DATA.drivers.filter(d => shift === 'ALL' || d.shift === shift);
+const visible = () => { const q = norm(query); return byShift().filter(d => matches(d, q)); };
+
+function hl(text, q) {
+  // highlight the raw query inside text, ignoring spaces/dashes in the text
+  if (!q) return esc(text);
+  const chars = [...text]; const keep = []; let flat = '';
+  chars.forEach((c, i) => { if (!/[\s\-–.]/.test(c)) { keep.push(i); flat += c.toLowerCase(); } });
+  const at = flat.indexOf(q); if (at < 0) return esc(text);
+  const s = keep[at], e = keep[at + q.length - 1];
+  return esc(chars.slice(0, s).join('')) + '<mark>' + esc(chars.slice(s, e + 1).join('')) + '</mark>' + esc(chars.slice(e + 1).join(''));
+}
+
+let suggItems = [], suggAct = -1;
+function showSugg(open) {
+  const box = $('sugg'); const q = norm(query);
+  if (!open) { box.classList.add('hidden'); $('searchBox').setAttribute('aria-expanded', 'false'); return; }
+  suggItems = byShift().filter(d => matches(d, q))
+    .sort((a, b) => a.shift.localeCompare(b.shift) || a.name.localeCompare(b.name, 'th'));
+  suggAct = q && suggItems.length ? 0 : -1;
+  box.innerHTML = suggItems.length
+    ? suggItems.map((d, i) => `<li role="option" data-i="${i}" class="${i === suggAct ? 'act' : ''}"><span>${hl(d.name, q)}</span><span class="m">${hl(d.plate, q)} · กะ ${esc(d.shift)} ${chip(d.avgSt)}</span></li>`).join('')
+    : `<li class="no">ไม่พบ “${esc(query)}”</li>`;
+  box.classList.remove('hidden'); $('searchBox').setAttribute('aria-expanded', 'true');
+  box.querySelectorAll('li[data-i]').forEach(li => li.onmousedown = e => { e.preventDefault(); pick(+li.dataset.i); });
+}
+function moveAct(step) {
+  if (!suggItems.length) return;
+  suggAct = (suggAct + step + suggItems.length) % suggItems.length;
+  $('sugg').querySelectorAll('li[data-i]').forEach((li, i) => { li.classList.toggle('act', i === suggAct); if (i === suggAct) li.scrollIntoView({ block: 'nearest' }); });
+}
+function pick(i) {
+  const d = suggItems[i]; if (!d) return;
+  showSugg(false); $('q').blur();
+  selectPerson(d.id);
+}
+function syncSearchUI() {
+  $('qClear').classList.toggle('hidden', !$('q').value);
+}
 
 function fillSelect() {
-  const sel = $('personSel');
-  const list = visible();
-  sel.innerHTML = '<option value="">— ดูภาพรวมทั้งหมด —</option>' +
-    ['A','B','-'].map(s => {
-      const g = list.filter(d => d.shift === s);
-      if (!g.length) return '';
-      return `<optgroup label="${s === '-' ? 'ไม่ระบุกะ' : 'กะ ' + s}">` +
-        g.slice().sort((a,b)=>a.name.localeCompare(b.name,'th')).map(d =>
-          `<option value="${d.id}">${esc(d.name)} (${esc(d.plate)})</option>`).join('') + '</optgroup>';
-    }).join('');
-  if (personId && !list.some(d => d.id === personId)) personId = null;
-  sel.value = personId ? String(personId) : '';
+  if (personId && !byShift().some(d => d.id === personId)) { personId = null; $('q').value = query; syncSearchUI(); }
 }
 
 // ---- Chart.js defaults
@@ -324,7 +373,9 @@ function renderOverview() {
   const nHigh = all.filter(r => r.st !== 'good').length;
   const nCrit = all.filter(r => r.st === 'crit').length;
   const watch = ds.filter(d => d.avgSt !== 'good').length;
-  const lastDate = DATA.dates[DATA.dates.length-1];
+  const note = $('filterNote');
+  note.classList.toggle('hidden', !query);
+  if (query) note.innerHTML = `ผลการค้นหา “<b>${esc(query)}</b>”: พบ ${ds.length} คน — ตัวเลขและกราฟด้านล่างคำนวณเฉพาะคนที่ค้นพบ`;
   $('ovKpis').innerHTML = [
     ['พนักงานขับรถ', ds.length, 'คน', `กะ A ${ds.filter(d=>d.shift==='A').length} · กะ B ${ds.filter(d=>d.shift==='B').length}`],
     ['จำนวนครั้งที่วัด', all.length, 'ครั้ง', `${DATA.dates.length} วันทำการ`],
@@ -408,7 +459,7 @@ function renderTable(ds) {
       <td class="num">${d.n}</td>
       <td>${chip(d.avgSt)}</td>
       <td>${d.last ? `${dShort(d.last.date)} · ${d.last.sys ?? '–'}/${d.last.dia ?? '–'}` : '–'}</td>
-    </tr>`).join('') + '</tbody>';
+    </tr>`).join('') + (rows.length ? '' : `<tr><td colspan="${cols.length}" class="empty">ไม่พบพนักงานที่ตรงกับคำค้น</td></tr>`) + '</tbody>';
   $('ovTable').querySelectorAll('th').forEach(th => th.onclick = () => {
     const k = th.dataset.k; if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = (k==='name'||k==='plate'||k==='shift') ? 1 : -1; }
     renderTable(visible());
@@ -495,7 +546,10 @@ function renderPerson() {
 
 function selectPerson(id) {
   personId = id || null;
-  $('personSel').value = personId ? String(personId) : '';
+  const d = personId && DATA.drivers.find(x => x.id === personId);
+  query = '';
+  $('q').value = d ? `${d.name} (${d.plate})` : '';
+  syncSearchUI();
   try { history.replaceState(null, '', personId ? '#p' + personId : location.pathname + location.search); } catch(e) {}
   render();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -515,7 +569,22 @@ $('shiftSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
   $('shiftSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
   fillSelect(); render();
 });
-$('personSel').onchange = e => selectPerson(+e.target.value);
+const qEl = $('q');
+qEl.addEventListener('input', () => {
+  query = qEl.value.trim();
+  if (personId) { personId = null; try { history.replaceState(null, '', location.pathname + location.search); } catch(e) {} }
+  syncSearchUI(); showSugg(true); render();
+});
+qEl.addEventListener('focus', () => { if (!personId) showSugg(true); else qEl.select(); });
+qEl.addEventListener('blur', () => setTimeout(() => showSugg(false), 120));
+qEl.addEventListener('keydown', e => {
+  const open = !$('sugg').classList.contains('hidden');
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (!open) showSugg(true); else moveAct(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveAct(-1); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (suggItems.length) pick(suggAct >= 0 ? suggAct : 0); }
+  else if (e.key === 'Escape') { showSugg(false); }
+});
+$('qClear').onclick = () => { selectPerson(null); qEl.focus(); };
 $('clearBtn').onclick = () => selectPerson(null);
 
 fetch('data.json', { cache: 'no-store' }).then(r => r.json()).then(data => {
@@ -524,8 +593,8 @@ fetch('data.json', { cache: 'no-store' }).then(r => r.json()).then(data => {
   $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · พขร. ${DATA.drivers.length} คน` : 'ยังไม่มีข้อมูล';
   const g = new Date(DATA.generatedAt);
   $('foot').textContent = `แหล่งข้อมูล: ${DATA.sources.join(', ')} · อัปเดตล่าสุด ${g.toLocaleString('th-TH')} · เกณฑ์อ้างอิง: ปกติ <140/90 mmHg, สูง ≥140/90, สูงมาก ≥160/100`;
-  const m = location.hash.match(/^#p(\d+)$/); if (m && DATA.drivers.some(d => d.id === +m[1])) personId = +m[1];
-  fillSelect(); render();
+  const m = location.hash.match(/^#p(\d+)$/);
+  if (m && DATA.drivers.some(d => d.id === +m[1])) selectPerson(+m[1]); else render();
 }).catch(err => { $('period').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err; });
 })();
 </script>
