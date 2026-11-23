@@ -92,10 +92,11 @@ PERIOD_ORDER = {"เช้า": 0, "บ่าย": 1, "เย็น": 2, "ดึ
 
 
 def sheet_group(title):
-    """ประเภทพนักงานจากชื่อชีต: "TPT A,B" -> TPT, "Forklift A,B" -> Forklift
+    """ประเภทพนักงานจากชื่อชีต: "TPT A,B" -> TPT, "Forklift A,B" / "Forklift JP" -> Forklift
     ชีตรุ่นเก่า ("กะ A", "กะ B", "กะ A (2)") = TPT"""
     t = re.sub(r"\s*\(\d+\)\s*$", "", clean(title))
-    t = re.sub(r"[\s_\-]*(กะ\s*)?(A\s*[,/&\-]?\s*B|A|B)?\s*$", "", t, flags=re.I).strip()
+    # ตัดรหัสกะท้ายชื่อ (A, B, A,B, A-B, JP, กะ A ...) — รหัสกะเป็นตัวอักษร 1–2 ตัว
+    t = re.sub(r"(\s+(กะ\s*)?[A-Za-z]{1,2}([\s,/&\-]+[A-Za-z]{1,2})*|\s*กะ\s*[A-Za-z]{1,2})\s*$", "", t).strip()
     return t or "TPT"
 
 
@@ -177,6 +178,7 @@ def main():
         sys.exit("ไม่พบไฟล์ Excel (.xlsx) ในโฟลเดอร์ data/")
 
     merged = {}
+    group_names = {}
     today = date.today()
     used = []
     for f in files:
@@ -188,6 +190,8 @@ def main():
         used.append(f)
         for ws in wb.worksheets:
             for p in parse_sheet(ws, (today.year, today.month)):
+                # "forklift A,B" กับ "Forklift A,B" = ประเภทเดียวกัน (ใช้ตัวสะกดที่เจอครั้งแรก)
+                p["group"] = group_names.setdefault(p["group"].casefold(), p["group"])
                 key = (p["group"], p["name"], p["shift"])
                 cur = merged.setdefault(key, {**p, "readings": {}})
                 for k in ("plate", "dept", "note"):
