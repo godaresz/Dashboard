@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-21T08:40:48+00:00",
+ "generatedAt": "2026-11-23T08:34:14+00:00",
  "sources": [
   "ลงข้อมูลวัดความดัน TPT A-B.xlsx"
  ],
@@ -7,6 +7,7 @@
   {
    "id": 1,
    "name": "นายนิรุต จิตสันเทียะ",
+   "group": "TPT",
    "plate": "71-1887",
    "shift": "A",
    "dept": "",
@@ -119,6 +120,7 @@
   {
    "id": 2,
    "name": "นายคำแพง ใจหาญ",
+   "group": "TPT",
    "plate": "71-1890",
    "shift": "A",
    "dept": "",
@@ -231,6 +233,7 @@
   {
    "id": 3,
    "name": "นายณชพล ชูประเสริฐ",
+   "group": "TPT",
    "plate": "71-2426",
    "shift": "A",
    "dept": "",
@@ -337,6 +340,7 @@
   {
    "id": 4,
    "name": "นายสมจันทร์ คำพินิจ",
+   "group": "TPT",
    "plate": "71-2427",
    "shift": "A",
    "dept": "",
@@ -443,6 +447,7 @@
   {
    "id": 5,
    "name": "นายประเสริฐ จันทรางศุข",
+   "group": "TPT",
    "plate": "71-2500",
    "shift": "A",
    "dept": "",
@@ -555,6 +560,7 @@
   {
    "id": 6,
    "name": "นายนัฐพล ปิ่นสุวรรณ",
+   "group": "TPT",
    "plate": "71-2501",
    "shift": "A",
    "dept": "",
@@ -661,6 +667,7 @@
   {
    "id": 7,
    "name": "นายสันต์ทัศน์ บุญยศ",
+   "group": "TPT",
    "plate": "71-3326",
    "shift": "A",
    "dept": "",
@@ -773,6 +780,7 @@
   {
    "id": 8,
    "name": "นายสรศักดิ์ นิลทีม",
+   "group": "TPT",
    "plate": "71-3373",
    "shift": "A",
    "dept": "",
@@ -885,6 +893,7 @@
   {
    "id": 9,
    "name": "นายณัฐพล โพธิศรีเนาว์",
+   "group": "TPT",
    "plate": "71-3415",
    "shift": "A",
    "dept": "",
@@ -997,6 +1006,7 @@
   {
    "id": 10,
    "name": "นายสมชาย รอดนุช",
+   "group": "TPT",
    "plate": "71-3416",
    "shift": "A",
    "dept": "",
@@ -1109,6 +1119,7 @@
   {
    "id": 11,
    "name": "นายธนสิษฐ์ ชุติปิยเศรษฐ์",
+   "group": "TPT",
    "plate": "71-3620",
    "shift": "A",
    "dept": "",
@@ -1221,6 +1232,7 @@
   {
    "id": 12,
    "name": "นายพงษ์พันธ์ มาวงษ์",
+   "group": "TPT",
    "plate": "71-6453",
    "shift": "A",
    "dept": "",
@@ -1279,6 +1291,7 @@
   {
    "id": 13,
    "name": "นายดาวนุรันต์ ชาวส้าน",
+   "group": "TPT",
    "plate": "71-6571",
    "shift": "A",
    "dept": "",
@@ -1361,6 +1374,7 @@
   {
    "id": 14,
    "name": "นายณรงค์ บุญพวง",
+   "group": "TPT",
    "plate": "71-7113",
    "shift": "A",
    "dept": "",
@@ -1473,6 +1487,7 @@
   {
    "id": 15,
    "name": "นายกล้านที ศรีนาค",
+   "group": "TPT",
    "plate": "71-7746",
    "shift": "A",
    "dept": "",
@@ -1585,6 +1600,7 @@
   {
    "id": 16,
    "name": "นายเรืองศักดิ์ อ่อนทา",
+   "group": "TPT",
    "plate": "71-9167",
    "shift": "A",
    "dept": "",
@@ -1697,6 +1713,7 @@
   {
    "id": 17,
    "name": "นายชมภู มณียารักษ์",
+   "group": "TPT",
    "plate": "71-9680",
    "shift": "A",
    "dept": "",
@@ -1809,6 +1826,7 @@
   {
    "id": 18,
    "name": "นายธรรมรัตน์ จิตชอบใจ",
+   "group": "TPT",
    "plate": "71-1887",
    "shift": "B",
    "dept": "",
@@ -1909,12 +1927,25 @@
      "sys": 137,
      "dia": 92,
      "pulse": 93
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 134,
+     "dia": 93,
+     "pulse": 89
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 168,
+     "dia": 103,
+     "pulse": 109
     }
    ]
   },
   {
    "id": 19,
    "name": "นายศุภกฤต ปราสัย",
+   "group": "TPT",
    "plate": "71-1890",
    "shift": "B",
    "dept": "",
@@ -2015,12 +2046,25 @@
      "sys": 125,
      "dia": 87,
      "pulse": 101
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 126,
+     "dia": 89,
+     "pulse": 103
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 149,
+     "dia": 110,
+     "pulse": 99
     }
    ]
   },
   {
    "id": 20,
    "name": "นายสมพร จูนประโดน",
+   "group": "TPT",
    "plate": "71-2427",
    "shift": "B",
    "dept": "",
@@ -2121,12 +2165,25 @@
      "sys": 125,
      "dia": 87,
      "pulse": 82
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 140,
+     "dia": 88,
+     "pulse": 72
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 141,
+     "dia": 96,
+     "pulse": 75
     }
    ]
   },
   {
    "id": 21,
    "name": "นายสายฝน ปะระชาติ",
+   "group": "TPT",
    "plate": "71-2500",
    "shift": "B",
    "dept": "",
@@ -2227,12 +2284,19 @@
      "sys": 128,
      "dia": 81,
      "pulse": 82
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 131,
+     "dia": 82,
+     "pulse": 82
     }
    ]
   },
   {
    "id": 22,
    "name": "นายจินดา เกษโส",
+   "group": "TPT",
    "plate": "71-2501",
    "shift": "B",
    "dept": "",
@@ -2327,12 +2391,25 @@
      "sys": 131,
      "dia": 81,
      "pulse": 69
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 139,
+     "dia": 79,
+     "pulse": 61
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 157,
+     "dia": 87,
+     "pulse": 76
     }
    ]
   },
   {
    "id": 23,
    "name": "นายยอดชาย ปั้นหลง",
+   "group": "TPT",
    "plate": "71-3326",
    "shift": "B",
    "dept": "",
@@ -2433,12 +2510,19 @@
      "sys": 127,
      "dia": 91,
      "pulse": 85
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 138,
+     "dia": 88,
+     "pulse": 74
     }
    ]
   },
   {
    "id": 24,
    "name": "นายวิชาญ มิ่งศิริ",
+   "group": "TPT",
    "plate": "71-3373",
    "shift": "B",
    "dept": "",
@@ -2521,12 +2605,25 @@
      "sys": 125,
      "dia": 85,
      "pulse": 71
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 128,
+     "dia": 85,
+     "pulse": 67
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 133,
+     "dia": 80,
+     "pulse": 83
     }
    ]
   },
   {
    "id": 25,
    "name": "นายสาโรจน์ หันยิ่ง",
+   "group": "TPT",
    "plate": "71-3415",
    "shift": "B",
    "dept": "",
@@ -2627,12 +2724,25 @@
      "sys": 103,
      "dia": 58,
      "pulse": 98
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 102,
+     "dia": 68,
+     "pulse": 95
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 123,
+     "dia": 84,
+     "pulse": 82
     }
    ]
   },
   {
    "id": 26,
    "name": "นายปริญญา แสงสังข์",
+   "group": "TPT",
    "plate": "71-3416",
    "shift": "B",
    "dept": "",
@@ -2715,12 +2825,25 @@
      "sys": 135,
      "dia": 83,
      "pulse": 94
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 136,
+     "dia": 89,
+     "pulse": 82
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 143,
+     "dia": 93,
+     "pulse": 83
     }
    ]
   },
   {
    "id": 27,
    "name": "นายวินัจ ขุนอินทร์",
+   "group": "TPT",
    "plate": "71-3620",
    "shift": "B",
    "dept": "",
@@ -2797,12 +2920,19 @@
      "sys": 111,
      "dia": 77,
      "pulse": 96
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 134,
+     "dia": 88,
+     "pulse": 87
     }
    ]
   },
   {
    "id": 28,
    "name": "นายธริวัฒน์ชัย เฉยขุน",
+   "group": "TPT",
    "plate": "71-6453",
    "shift": "B",
    "dept": "",
@@ -2891,12 +3021,19 @@
      "sys": 119,
      "dia": 80,
      "pulse": 76
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 110,
+     "dia": 78,
+     "pulse": 77
     }
    ]
   },
   {
    "id": 29,
    "name": "นายอภิสิทธิ์ รังกุล",
+   "group": "TPT",
    "plate": "71-6571",
    "shift": "B",
    "dept": "",
@@ -2997,12 +3134,25 @@
      "sys": 137,
      "dia": 90,
      "pulse": 74
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 154,
+     "dia": 96,
+     "pulse": 77
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 167,
+     "dia": 96,
+     "pulse": 81
     }
    ]
   },
   {
    "id": 30,
    "name": "นายสมพงษ์ อุ่นกระโทก",
+   "group": "TPT",
    "plate": "71-7113",
    "shift": "B",
    "dept": "",
@@ -3103,12 +3253,25 @@
      "sys": 135,
      "dia": 94,
      "pulse": 94
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 139,
+     "dia": 88,
+     "pulse": 93
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 125,
+     "dia": 95,
+     "pulse": 98
     }
    ]
   },
   {
    "id": 31,
    "name": "นายเอกภพ วัฒนะก้านตง",
+   "group": "TPT",
    "plate": "71-7746",
    "shift": "B",
    "dept": "",
@@ -3209,12 +3372,25 @@
      "sys": 106,
      "dia": 72,
      "pulse": 64
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 110,
+     "dia": 73,
+     "pulse": 67
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 121,
+     "dia": 79,
+     "pulse": 67
     }
    ]
   },
   {
    "id": 32,
    "name": "นายพงศ์อินธิ์ เชื้อกูลชาติ",
+   "group": "TPT",
    "plate": "71-9167",
    "shift": "B",
    "dept": "",
@@ -3309,12 +3485,25 @@
      "sys": 108,
      "dia": 66,
      "pulse": 85
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 108,
+     "dia": 75,
+     "pulse": 81
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 111,
+     "dia": 74,
+     "pulse": 69
     }
    ]
   },
   {
    "id": 33,
    "name": "นายศรัณย์ อินปาน",
+   "group": "TPT",
    "plate": "71-9680",
    "shift": "B",
    "dept": "",
@@ -3415,12 +3604,25 @@
      "sys": 114,
      "dia": 82,
      "pulse": 91
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 123,
+     "dia": 81,
+     "pulse": 76
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 117,
+     "dia": 81,
+     "pulse": 73
     }
    ]
   },
   {
    "id": 34,
    "name": "นายกิตติศักดิ์ เกิดแก้ว",
+   "group": "TPT",
    "plate": "71-9681",
    "shift": "B",
    "dept": "",
@@ -3515,8 +3717,480 @@
      "sys": 122,
      "dia": 85,
      "pulse": 92
+    },
+    {
+     "date": "2026-11-21",
+     "sys": 123,
+     "dia": 84,
+     "pulse": 80
+    },
+    {
+     "date": "2026-11-23",
+     "sys": 127,
+     "dia": 85,
+     "pulse": 84
     }
    ]
+  },
+  {
+   "id": 35,
+   "name": "น.ส.นงเยาว์ จำปาชัย",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 88,
+     "dia": 73,
+     "pulse": 103
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 82,
+     "dia": 64,
+     "pulse": 108
+    }
+   ]
+  },
+  {
+   "id": 36,
+   "name": "นายจักรกฤษณ์ ประดาอินทร์",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 136,
+     "dia": 87,
+     "pulse": 107
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 137,
+     "dia": 81,
+     "pulse": 89
+    }
+   ]
+  },
+  {
+   "id": 37,
+   "name": "นายณัฐวุฒิ มาประจวบ",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 113,
+     "dia": 64,
+     "pulse": 87
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 118,
+     "dia": 61,
+     "pulse": 79
+    }
+   ]
+  },
+  {
+   "id": 38,
+   "name": "นายนครินทร์ วรรณศรี",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 137,
+     "dia": 91,
+     "pulse": 101
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 138,
+     "dia": 91,
+     "pulse": 115
+    }
+   ]
+  },
+  {
+   "id": 39,
+   "name": "นายนโรดม ม่วงนอก",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 96,
+     "dia": 76,
+     "pulse": 92
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 102,
+     "dia": 78,
+     "pulse": 97
+    }
+   ]
+  },
+  {
+   "id": 40,
+   "name": "นายพีรพัฒน์ พรมดี",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 103,
+     "dia": 83,
+     "pulse": 89
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 105,
+     "dia": 77,
+     "pulse": 92
+    }
+   ]
+  },
+  {
+   "id": 41,
+   "name": "นายฟาอีซ เจ๊ะมามะ",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 117,
+     "dia": 79,
+     "pulse": 77
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 109,
+     "dia": 67,
+     "pulse": 74
+    }
+   ]
+  },
+  {
+   "id": 42,
+   "name": "นายมณฑล สกุลกิจธนสาร",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 129,
+     "dia": 86,
+     "pulse": 85
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 130,
+     "dia": 86,
+     "pulse": 86
+    }
+   ]
+  },
+  {
+   "id": 43,
+   "name": "นายสุขสันต์ สุขแก้ว",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 145,
+     "dia": 101,
+     "pulse": 85
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 157,
+     "dia": 105,
+     "pulse": 100
+    }
+   ]
+  },
+  {
+   "id": 44,
+   "name": "นายอัษฎาวุธ วิชาเดช",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 111,
+     "dia": 84,
+     "pulse": 104
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 109,
+     "dia": 74,
+     "pulse": 108
+    }
+   ]
+  },
+  {
+   "id": 45,
+   "name": "นายเทพมงคล มอมไธสง",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "A",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 103,
+     "dia": 111,
+     "pulse": 84
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 121,
+     "dia": 79,
+     "pulse": 83
+    }
+   ]
+  },
+  {
+   "id": 46,
+   "name": "นายขวัญชัย รอดสุข",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 47,
+   "name": "นายคำสิงห์ สำลีใย",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 48,
+   "name": "นายชัยวัตร นาเมืองรักษ์",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 49,
+   "name": "นายชิษณุพงษ์ คนไว",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 50,
+   "name": "นายพีรพัฒน์ แสนจันทร์",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 51,
+   "name": "นายมนูญ เรียบรัตน์",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 52,
+   "name": "นายศักรินทร์ สายทอง",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 53,
+   "name": "นายสุนทร วงศ์สว่าง",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 54,
+   "name": "นายสุรชัย จันทมูล",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 55,
+   "name": "นายสุรเดช ผาสานคำ",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 56,
+   "name": "นายไชยยงค์ สมีกลาง",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "B",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 57,
+   "name": "น.ส.รัตนาภรณ์ รัตนกาญจนพันธ์",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "JP",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 58,
+   "name": "นายคามิน วรโชติ",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "JP",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 59,
+   "name": "นายชัยพร วงษ์ทอง",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "JP",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 60,
+   "name": "นายปริญญา ประสงค์ทรัพย์",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "JP",
+   "dept": "",
+   "note": "",
+   "readings": [
+    {
+     "date": "2026-11-02",
+     "period": "เช้า",
+     "sys": 118,
+     "dia": 81,
+     "pulse": 104
+    },
+    {
+     "date": "2026-11-02",
+     "period": "บ่าย",
+     "sys": 120,
+     "dia": 77,
+     "pulse": 102
+    }
+   ]
+  },
+  {
+   "id": 61,
+   "name": "นายอนุชา ระตะโม",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "JP",
+   "dept": "",
+   "note": "",
+   "readings": []
+  },
+  {
+   "id": 62,
+   "name": "นายเปิ้ล แก้วมุกดา",
+   "group": "Forklift",
+   "plate": "",
+   "shift": "JP",
+   "dept": "",
+   "note": "",
+   "readings": []
   }
  ]
 }
