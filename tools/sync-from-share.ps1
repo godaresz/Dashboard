@@ -11,7 +11,9 @@
 #  ซิงก์ต่อเนื่อง: ดับเบิลคลิก auto-sync.bat (เปิดหน้าต่างทิ้งไว้ ตรวจทุก 5 นาที)
 # ------------------------------------------------------------------
 param(
-    [string]$Source = '\\la26032\scan\1.Data Cross Dock Center\31.ลงข้อมูลวัดความดัน พขร. TPT',
+    [string]$Source = '\\la26032\scan\1.Data Cross Dock Center\31.ลงข้อมูลวัดความดัน พขร. TPT และ Forklift',
+    # ถ้าโฟลเดอร์ถูกเปลี่ยนชื่อ จะหาโฟลเดอร์ในโฟลเดอร์แม่ที่ชื่อมีคำนี้แทน
+    [string]$FolderKeyword = 'วัดความดัน',
     [string]$Owner  = 'godaresz',
     [string]$RepoName = 'Dashboard',
     [string]$Branch = 'main',
@@ -123,8 +125,23 @@ function Get-BlobSha([byte[]]$bytes) {
     finally { $sha1.Dispose() }
 }
 
+# หาโฟลเดอร์ข้อมูล: ใช้ $Source ถ้ามี ไม่งั้นค้นในโฟลเดอร์แม่หาโฟลเดอร์ที่ชื่อมี $FolderKeyword (กันกรณีเปลี่ยนชื่อโฟลเดอร์)
+function Resolve-Source {
+    if (Test-Path -LiteralPath $Source) { return $Source }
+    $parent = Split-Path -Parent $Source
+    if (-not (Test-Path -LiteralPath $parent)) { throw "เข้าโฟลเดอร์แชร์ไม่ได้: $parent" }
+    $found = @(Get-ChildItem -LiteralPath $parent -Directory | Where-Object { $_.Name -like "*$FolderKeyword*" })
+    if ($found.Count -eq 1) {
+        if ($script:LastFound -ne $found[0].FullName) { Log "ไม่พบโฟลเดอร์เดิม ใช้โฟลเดอร์ที่ชื่อใหม่แทน: $($found[0].Name)" }
+        $script:LastFound = $found[0].FullName
+        return $found[0].FullName
+    }
+    if ($found.Count -gt 1) { throw "ไม่พบโฟลเดอร์ $Source และเจอโฟลเดอร์ที่ชื่อมี '$FolderKeyword' หลายโฟลเดอร์: $(($found | ForEach-Object { $_.Name }) -join ', ') — แก้ค่า `$Source ในสคริปต์" }
+    throw "เข้าโฟลเดอร์แชร์ไม่ได้: $Source (และไม่พบโฟลเดอร์ที่ชื่อมี '$FolderKeyword' ใน $parent)"
+}
+
 function Sync-Once {
-    if (-not (Test-Path -LiteralPath $Source)) { throw "เข้าโฟลเดอร์แชร์ไม่ได้: $Source" }
+    $Source = Resolve-Source
     $local = @(Get-ChildItem -LiteralPath $Source -File |
         Where-Object { $Exts -contains $_.Extension.ToLower() -and $_.Name -notlike '~$*' })
     if ($local.Count -eq 0) { Log 'ไม่พบไฟล์ .xlsx ในโฟลเดอร์แชร์ — ไม่ทำอะไร'; return }
