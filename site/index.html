@@ -224,6 +224,76 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
   h1{font-size:20px}
 }
 .empty{color:var(--text-3);padding:24px;text-align:center}
+
+/* ================= ดีไซน์ & แอนิเมชัน ================= */
+:root{--radius:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);--shadow-hover:0 4px 10px rgba(16,24,40,.08),0 14px 34px rgba(16,24,40,.12);
+  --hero-a:#1d4ed8;--hero-b:#6d28d9;--ease:cubic-bezier(.22,.8,.26,1)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);--shadow-hover:0 6px 18px rgba(0,0,0,.5);--hero-a:#1e3a8a;--hero-b:#4c1d95}}
+:root[data-theme="dark"]{--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);--shadow-hover:0 6px 18px rgba(0,0,0,.5);--hero-a:#1e3a8a;--hero-b:#4c1d95}
+body{background:radial-gradient(1200px 600px at 10% -10%,color-mix(in srgb,var(--hero-a) 9%,transparent),transparent 60%),radial-gradient(900px 500px at 100% 0%,color-mix(in srgb,var(--hero-b) 8%,transparent),transparent 55%),var(--bg);background-attachment:fixed}
+
+/* หัวหน้า: แถบไล่สีเคลื่อนไหวช้า ๆ */
+header.top{position:relative;overflow:hidden;color:#fff;padding:22px 24px;border-radius:20px;margin-bottom:18px;
+  background:linear-gradient(120deg,var(--hero-a),var(--hero-b),var(--hero-a));background-size:220% 220%;animation:heroShift 18s ease-in-out infinite;box-shadow:0 10px 30px color-mix(in srgb,var(--hero-a) 30%,transparent)}
+header.top::after{content:'';position:absolute;right:-60px;top:-80px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.08);pointer-events:none}
+header.top::before{content:'';position:absolute;right:120px;bottom:-110px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none}
+header.top h1{color:#fff;font-size:26px}
+header.top .sub{color:rgba(255,255,255,.92)}
+header.top .live i{background:#86efac;box-shadow:0 0 0 0 rgba(134,239,172,.7);animation:livePing 2s infinite}
+header.top .online{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);color:#fff}
+header.top .online b{color:#fff}
+header.top .online i{background:#86efac}
+header.top .btn-theme{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:7px 14px;position:relative;z-index:1}
+header.top .btn-theme:hover{background:rgba(255,255,255,.26)}
+@keyframes heroShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes livePing{0%{box-shadow:0 0 0 0 rgba(134,239,172,.7)}70%{box-shadow:0 0 0 8px rgba(134,239,172,0)}100%{box-shadow:0 0 0 0 rgba(134,239,172,0)}}
+
+/* การ์ดนุ่มขึ้น */
+.card,.kpi,.filters{border-radius:var(--radius);box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--border) 70%,transparent)}
+.filters{backdrop-filter:saturate(1.4) blur(8px);background:color-mix(in srgb,var(--surface) 88%,transparent)}
+.kpi{position:relative;overflow:hidden;transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
+.kpi::before{content:'';position:absolute;left:0;top:0;right:0;height:4px;background:var(--accent);opacity:.85}
+.kpi.ok::before{background:#1b7f3b}.kpi.warn::before{background:#f59f1a}.kpi.crit::before{background:#c92a2a}
+.kpi-btn:hover,.kpi-btn:focus-visible{transform:translateY(-3px);box-shadow:var(--shadow-hover)}
+.kpi-btn .go{transition:transform .2s var(--ease)}
+.kpi-btn:hover .go{transform:translateX(4px)}
+.kgroup-t{text-transform:none;letter-spacing:.01em}
+.al-name{transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s}
+.al-name:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.al-group.stop{animation:stopGlow 2.4s ease-in-out infinite}
+@keyframes stopGlow{0%,100%{box-shadow:0 0 0 0 rgba(201,42,42,0)}50%{box-shadow:0 0 0 4px rgba(201,42,42,.18)}}
+.bell .n{transition:transform .2s}
+.bell:not(.ok) .n{animation:bellPop 2.6s ease-in-out infinite}
+@keyframes bellPop{0%,86%,100%{transform:scale(1)}90%{transform:scale(1.25)}95%{transform:scale(.95)}}
+.chip{transition:filter .2s}
+tbody tr.click{transition:background .15s}
+.seg button,.tabs button,.btn-clear,.bell{transition:background .2s,color .2s,box-shadow .2s,transform .15s}
+.seg button:active,.bell:active{transform:scale(.97)}
+
+/* แท็บ: เส้นใต้เลื่อนตามแท็บที่เลือก */
+.tabs{position:relative;border-bottom-color:color-mix(in srgb,var(--border) 70%,transparent)}
+.tabs button[aria-selected="true"]{border-bottom-color:transparent}
+.tab-ink{position:absolute;bottom:-2px;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--hero-a),var(--hero-b));transition:left .35s var(--ease),width .35s var(--ease);pointer-events:none}
+.tabpanel:not(.hidden){animation:panelIn .35s var(--ease) both}
+@keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* แอนิเมชันตอนเปิดหน้า / สลับแท็บ (class .boot ใส่ชั่วคราว — ไม่เล่นซ้ำตอนพิมพ์ค้นหา) */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+@keyframes cellIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes grow{from{width:0}}
+.boot .card,.boot .kpi,.boot .filters,.boot .kgroup-t{animation:fadeUp .55s var(--ease) both;animation-delay:calc(var(--i,0) * 70ms)}
+.boot header.top{animation:fadeUp .6s var(--ease) both,heroShift 18s ease-in-out infinite}
+.boot .al-name{animation:popIn .4s var(--ease) both;animation-delay:calc(200ms + var(--i,0) * 45ms)}
+.boot .hm td.c{animation:cellIn .4s var(--ease) both;animation-delay:calc(var(--c,0) * 22ms)}
+.boot .bartrack i{animation:grow .9s var(--ease) both;animation-delay:.15s}
+.boot tbody tr.click{animation:fadeUp .4s var(--ease) both;animation-delay:calc(var(--i,0) * 18ms)}
+.update-bar{animation:popIn .3s var(--ease) both}
+
+/* ผู้ที่ตั้งค่า "ลดการเคลื่อนไหว" — ปิดแอนิเมชันทั้งหมด */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
 </style>
 </head>
 <body>
@@ -279,6 +349,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
       <button role="tab" id="tab-charts" data-tab="charts" aria-selected="true">📊 แนวโน้ม</button>
       <button role="tab" id="tab-list" data-tab="list" aria-selected="false">👥 รายชื่อทั้งหมด <span class="c" id="tabListN"></span></button>
       <button role="tab" id="tab-heat" data-tab="heat" aria-selected="false">🗓️ ตารางสีรายวัน</button>
+      <span class="tab-ink" id="tabInk" aria-hidden="true"></span>
     </div>
     <div class="tabpanel" data-panel="charts">
     <div class="grid2">
@@ -698,8 +769,8 @@ function renderHeatmap(ds) {
     prev = gk;
     const by = Object.fromEntries(d.readings.map(r => [r.date, r]));
     html += `<tr><td class="nm"><button class="namebtn" type="button" data-id="${d.id}">${esc(d.name)}</button> <span class="m">${esc(d.plate || '')}${d.plate ? ' · ' : ''}${esc(d.shift)}</span></td>` +
-      dates.map(dt => { const r = by[dt]; if (!r) return `<td class="c none" data-tip="${esc(d.name)} · ${dLong(dt)} · ไม่มีข้อมูล"></td>`;
-        return `<td class="c lv-${r.st}" data-tip="${esc(d.name)} · ${dLong(dt)} · ${r.periods ? r.periods.map(x => `${x.period || ''} ${x.sys ?? '–'}/${x.dia ?? '–'} ${LV[x.st].label}`).join(' | ') : `${r.sys ?? '–'}/${r.dia ?? '–'} mmHg · ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}`}"><b>${r.sys ?? '–'}</b><span>${r.dia ?? '–'}</span></td>`; }).join('') + '</tr>';
+      dates.map((dt, ci) => { const r = by[dt]; if (!r) return `<td class="c none" style="--c:${ci}" data-tip="${esc(d.name)} · ${dLong(dt)} · ไม่มีข้อมูล"></td>`;
+        return `<td class="c lv-${r.st}" style="--c:${ci}" data-tip="${esc(d.name)} · ${dLong(dt)} · ${r.periods ? r.periods.map(x => `${x.period || ''} ${x.sys ?? '–'}/${x.dia ?? '–'} ${LV[x.st].label}`).join(' | ') : `${r.sys ?? '–'}/${r.dia ?? '–'} mmHg · ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}`}"><b>${r.sys ?? '–'}</b><span>${r.dia ?? '–'}</span></td>`; }).join('') + '</tr>';
   });
   $('heatmap').innerHTML = html + '</tbody>';
   $('heatmap').querySelectorAll('.namebtn').forEach(b => b.onclick = () => selectPerson(+b.dataset.id));
@@ -896,6 +967,39 @@ function scrollHeatToLatest() {
   requestAnimationFrame(() => { w.scrollLeft = w.scrollWidth; });
 }
 
+// ================= แอนิเมชัน =================
+const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+// เล่นแอนิเมชันเข้าเฉพาะตอนเปิดหน้า/สลับแท็บ: ใส่ class .boot ชั่วคราว แล้วเอาออก (พิมพ์ค้นหา/กรองจะไม่กระพริบ)
+function playIn(el, ms = 1600) {
+  if (REDUCED || !el) return;
+  el.querySelectorAll('.card, .kpi, .kgroup-t').forEach((c, i) => c.style.setProperty('--i', Math.min(i, 12)));
+  el.querySelectorAll('.al-name').forEach((c, i) => c.style.setProperty('--i', Math.min(i, 20)));
+  el.querySelectorAll('tbody tr.click').forEach((c, i) => c.style.setProperty('--i', Math.min(i, 30)));
+  el.classList.remove('boot'); void el.offsetWidth; el.classList.add('boot');
+  clearTimeout(el._bootT); el._bootT = setTimeout(() => el.classList.remove('boot'), ms);
+}
+// ตัวเลข KPI นับขึ้น (เฉพาะตอนเปิดหน้า)
+function countUp(root) {
+  if (REDUCED) return;
+  root.querySelectorAll('.kpi .v').forEach(v => {
+    const node = v.firstChild; if (!node || node.nodeType !== 3) return;
+    const to = parseFloat(node.textContent); if (!isFinite(to) || to <= 0) return;
+    const t0 = performance.now(), dur = 900;
+    const step = now => { const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      node.textContent = Math.round(to * e); if (k < 1) requestAnimationFrame(step); else node.textContent = to; };
+    node.textContent = '0'; requestAnimationFrame(step);
+  });
+}
+// เส้นใต้แท็บเลื่อนไปยังแท็บที่เลือก
+function moveTabInk() {
+  const ink = $('tabInk'), on = document.querySelector('#tabs [role="tab"][aria-selected="true"]');
+  if (!ink || !on) return;
+  ink.style.left = on.offsetLeft + 'px'; ink.style.width = on.offsetWidth + 'px';
+}
+window.addEventListener('resize', moveTabInk);
+if (window.Chart && REDUCED) Chart.defaults.animation = false;
+else if (window.Chart) { Chart.defaults.animation.duration = 800; Chart.defaults.animation.easing = 'easeOutQuart'; }
+
 // ---- แท็บ: แนวโน้ม / รายชื่อ / ตารางสี (หน้าสั้นลง ไม่ต้องเลื่อนยาว)
 let tab = 'charts';
 try { tab = localStorage.getItem('bp-tab') || 'charts'; } catch (e) {}
@@ -906,6 +1010,8 @@ function showTab(t, focus) {
   document.querySelectorAll('#tabs [role="tab"]').forEach(b => { const on = b.dataset.tab === t; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
   document.querySelectorAll('.tabpanel').forEach(p => p.classList.toggle('hidden', p.dataset.panel !== t));
   if (t === 'heat') scrollHeatToLatest();
+  moveTabInk();
+  if (DATA) playIn(document.querySelector(`.tabpanel[data-panel="${t}"]`), 1400);
 }
 document.querySelectorAll('#tabs [role="tab"]').forEach((b, i, all) => {
   b.onclick = () => { showTab(b.dataset.tab); if (b.dataset.tab === 'charts') render(); };   // กราฟต้องวาดใหม่เมื่อมองเห็น
@@ -986,6 +1092,7 @@ $('critTable').innerHTML = `<thead><tr><th>ระดับความดัน<
 const REFRESH_MS = 5 * 60 * 1000;
 function applyData(data, first) {
   DATA = enrich(data);
+  if (first) requestAnimationFrame(() => { playIn(document.body, 2000); countUp($('ovKpis')); countUp($('pKpis')); moveTabInk(); });
   buildFilters();
   checkNewAlerts(first);
   const f = DATA.dates[0], l = DATA.dates[DATA.dates.length-1];
