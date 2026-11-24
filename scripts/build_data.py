@@ -229,6 +229,7 @@ def main():
 
     out = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "build": os.environ.get("BUILD_ID", ""),   # เวอร์ชันโค้ดหน้าเว็บ (ตั้งโดย GitHub Actions)
         "sources": [os.path.basename(f) for f in used],
         "drivers": drivers,
     }
