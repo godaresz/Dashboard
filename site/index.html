@@ -657,6 +657,17 @@ function renderTable(ds) {
     let x = a[sortKey], y = b[sortKey];
     if (sortKey === 'avgSt') { x = rank[x]; y = rank[y]; }
     if (sortKey === 'last') { x = a.last ? LV[a.last.st].sev : -2; y = b.last ? LV[b.last.st].sev : -2; }
+    if (sortKey === 'avgSys') {
+      // เรียงตาม "ผลเฉลี่ย": ระดับก่อน (สูงมาก → … → ดี) แล้วตามว่าเกินเกณฑ์มากแค่ไหน
+      // (ตัวบนเทียบ 140 หรือตัวล่างเทียบ 90 — เอาตัวที่เกินมากกว่า) — ไม่ใช้แค่ตัวบนอย่างเดียว
+      // ใช้ค่าที่ปัดแล้ว (ตรงกับที่แสดง) · คนที่ไม่มีข้อมูลอยู่ท้ายเสมอ
+      if ((a.avgSys == null) !== (b.avgSys == null)) return a.avgSys == null ? 1 : -1;
+      if (a.avgSys == null) return 0;
+      const S = d => Math.round(d.avgSys), D = d => Math.round(d.avgDia || 0);
+      const lv = d => LV[d.avgSt].sev;
+      const over = d => Math.max(S(d) / 140, D(d) / 90);
+      return ((lv(a) - lv(b)) || (over(a) - over(b)) || (S(a) + D(a) - S(b) - D(b))) * sortDir;
+    }
     if (typeof x === 'string') return x.localeCompare(y, 'th') * sortDir;
     return ((x ?? -1) - (y ?? -1)) * sortDir || b.avgSys - a.avgSys;
   });
