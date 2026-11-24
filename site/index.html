@@ -133,6 +133,8 @@ select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px
 .namebtn{font:inherit;font-weight:600;color:var(--text);background:none;border:0;padding:0;cursor:pointer;text-align:left}
 .namebtn:hover{text-decoration:underline;color:var(--accent)}
 #ovTable td:first-child,#ovTable th:first-child{position:sticky;left:0;background:var(--surface);z-index:1}
+.update-bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;background:var(--text);color:var(--surface);padding:10px 18px;border-radius:999px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center}
+.update-bar button{font:inherit;font-size:13px;border:0;border-radius:999px;padding:4px 12px;cursor:pointer;background:var(--surface);color:var(--text)}
 .filter-note{font-size:13px;color:var(--text-2);margin:-6px 0 12px}
 .btn-clear{font:inherit;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text-2);border-radius:8px;padding:6px 10px;cursor:pointer}
 .legend-status{margin-left:auto;display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-2)}
@@ -179,6 +181,7 @@ tbody tr.click:hover,#ovTable tbody tr.click:hover td:first-child{background:var
 .hm th,.hm td{border:0;padding:0}
 .hm th{background:transparent;font-weight:600;font-size:12.5px;color:var(--text-2);text-align:center;padding:2px 0;cursor:default;position:static}
 .hm td.nm{padding:0 10px 0 0;font-size:14px;color:var(--text);position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap}
+.hm thead th:first-child{position:sticky;left:0;background:var(--surface);z-index:2}
 .hm td.nm .m{font-size:12.5px;color:var(--text-3);font-weight:400}
 .hm td.nm:hover{text-decoration:underline}
 .hm td.c{width:52px;min-width:52px;height:42px;text-align:center;border-radius:4px;line-height:1.1;font-variant-numeric:tabular-nums;cursor:default}
@@ -339,6 +342,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
   <footer id="foot"></footer>
 </div>
 <div class="tip hidden" id="tip"></div>
+<div class="update-bar hidden" id="updateBar" role="status" aria-live="polite"></div>
 
 <script>
 (() => {
@@ -665,6 +669,7 @@ function renderHeatmap(ds) {
   });
   $('heatmap').innerHTML = html + '</tbody>';
   $('heatmap').querySelectorAll('.namebtn').forEach(b => b.onclick = () => selectPerson(+b.dataset.id));
+  scrollHeatToLatest();
 }
 
 // tooltip for heatmap cells
@@ -851,6 +856,12 @@ function checkNewAlerts(isFirst) {
   setTimeout(() => { const c = $('alertCard'); c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); }, 300);
 }
 
+// ตารางสีกว้างกว่าจอเมื่อมีหลายวัน — เลื่อนไปวันล่าสุด (ขวาสุด) ให้เห็นวันที่สำคัญที่สุดก่อน
+function scrollHeatToLatest() {
+  const w = $('heatmap').parentElement;
+  requestAnimationFrame(() => { w.scrollLeft = w.scrollWidth; });
+}
+
 // ---- แท็บ: แนวโน้ม / รายชื่อ / ตารางสี (หน้าสั้นลง ไม่ต้องเลื่อนยาว)
 let tab = 'charts';
 try { tab = localStorage.getItem('bp-tab') || 'charts'; } catch (e) {}
@@ -860,6 +871,7 @@ function showTab(t, focus) {
   try { localStorage.setItem('bp-tab', t); } catch (e) {}
   document.querySelectorAll('#tabs [role="tab"]').forEach(b => { const on = b.dataset.tab === t; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
   document.querySelectorAll('.tabpanel').forEach(p => p.classList.toggle('hidden', p.dataset.panel !== t));
+  if (t === 'heat') scrollHeatToLatest();
 }
 document.querySelectorAll('#tabs [role="tab"]').forEach((b, i, all) => {
   b.onclick = () => { showTab(b.dataset.tab); if (b.dataset.tab === 'charts') render(); };   // กราฟต้องวาดใหม่เมื่อมองเห็น
@@ -946,7 +958,7 @@ function applyData(data, first) {
   $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · ${DATA.groups.map(g => `${g} ${DATA.drivers.filter(d => d.group === g).length} คน`).join(' · ')}` : 'ยังไม่มีข้อมูล';
   const g = new Date(DATA.generatedAt);
   $('liveNote').innerHTML = `<i></i> ข้อมูลอัปเดตล่าสุด ${g.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} · หน้านี้รีเฟรชข้อมูลอัตโนมัติทุก 5 นาที`;
-  $('foot').textContent = `แหล่งข้อมูล: ${DATA.sources.join(', ')} · เกณฑ์อ้างอิง: โรงพยาบาลศิริราชปิยมหาราชการุณย์ / องค์การอนามัยโลก (WHO)`;
+  $('foot').textContent = `แหล่งข้อมูล: ${DATA.sources.join(', ')} · เกณฑ์อ้างอิง: โรงพยาบาลศิริราชปิยมหาราชการุณย์ / องค์การอนามัยโลก (WHO)` + (isStamped ? ` · เวอร์ชัน ${BUILD.slice(0, 7)}` : '');
   if (first) {
     const m = location.hash.match(/^#p(\d+)$/);
     if (m && DATA.drivers.some(d => d.id === +m[1])) { selectPerson(+m[1]); return; }
@@ -983,14 +995,39 @@ function applyData(data, first) {
   }).catch(() => box.classList.add('hidden'));
 })();
 
+// ---- บังคับอัปเดตหน้าเว็บที่เปิดค้างไว้ เมื่อมีการแก้โค้ดหน้าเว็บ
+// GitHub Actions แทน __BUILD_ID__ ด้วย hash ของโค้ด และใส่ค่าเดียวกันใน data.json ("build")
+// ถ้าหน้านี้เป็นเวอร์ชันเก่า (build ไม่ตรง) -> รีโหลดพร้อม ?v= เพื่อข้าม cache · กันวนซ้ำด้วย sessionStorage
+const BUILD = '__BUILD_ID__';
+const isStamped = BUILD.indexOf('BUILD_ID') < 0;
+let updating = false;
+function checkVersion(d) {
+  if (updating || !isStamped || !d || !d.build || d.build === BUILD) return false;
+  let tried = null;
+  try { tried = sessionStorage.getItem('bp-reload-for'); } catch (e) {}
+  const bar = $('updateBar');
+  if (tried === d.build) {   // รีโหลดไปแล้วแต่ยังได้หน้าเก่า (cache) — ไม่วนซ้ำ ให้กดเอง
+    bar.innerHTML = 'มีเวอร์ชันใหม่ของ Dashboard <button type="button" id="updBtn">อัปเดตเลย</button>';
+    bar.classList.remove('hidden');
+    $('updBtn').onclick = () => location.replace(location.pathname + '?v=' + d.build + '&r=' + Date.now() + location.hash);
+    return false;
+  }
+  updating = true;
+  try { sessionStorage.setItem('bp-reload-for', d.build); } catch (e) {}
+  bar.textContent = '🔄 มีเวอร์ชันใหม่ของ Dashboard — กำลังอัปเดต…';
+  bar.classList.remove('hidden');
+  setTimeout(() => location.replace(location.pathname + '?v=' + d.build + location.hash), 2500);
+  return true;
+}
+
 const loadData = () => fetch('data.json?t=' + Date.now(), { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
-loadData().then(d => applyData(d, true)).catch(err => { $('period').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err; });
+loadData().then(d => { if (!checkVersion(d)) applyData(d, true); }).catch(err => { $('period').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err; });
 setInterval(() => {
   if (document.hidden) return;
-  loadData().then(d => { if (!DATA || d.generatedAt !== DATA.generatedAt) applyData(d, false); }).catch(() => {});
+  loadData().then(d => { if (checkVersion(d)) return; if (!DATA || d.generatedAt !== DATA.generatedAt) applyData(d, false); }).catch(() => {});
 }, REFRESH_MS);
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && DATA) loadData().then(d => { if (d.generatedAt !== DATA.generatedAt) applyData(d, false); }).catch(() => {});
+  if (!document.hidden && DATA) loadData().then(d => { if (checkVersion(d)) return; if (d.generatedAt !== DATA.generatedAt) applyData(d, false); }).catch(() => {});
 });
 })();
 </script>
