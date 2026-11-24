@@ -51,8 +51,10 @@ h1{font-size:24px;margin:0;font-weight:700;letter-spacing:-.01em}
 
 .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:16px;position:sticky;top:42px;z-index:5}
 .filters label{font-size:13px;color:var(--text-2)}
-.seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:3px}
-.seg button{border:0;background:transparent;font:inherit;font-size:14px;padding:5px 14px;border-radius:6px;cursor:pointer;color:var(--text-2)}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:3px;max-width:100%;overflow-x:auto}
+.fgroup{display:inline-flex;align-items:center;gap:8px;max-width:100%}
+.flbl{font-size:13px;color:var(--text-2);white-space:nowrap}
+.seg button{border:0;background:transparent;font:inherit;font-size:14px;padding:5px 14px;border-radius:6px;cursor:pointer;color:var(--text-2);white-space:nowrap}
 .seg button.on{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-width:260px;max-width:100%}
 .search{position:relative;flex:0 1 340px;min-width:240px}
@@ -173,7 +175,7 @@ tbody tr.click:hover,#ovTable tbody tr.click:hover td:first-child{background:var
 .bartrack i.crit{background:var(--crit)}
 
 /* heatmap */
-.hm{border-collapse:separate;border-spacing:3px;font-size:13px}
+.hm{border-collapse:separate;border-spacing:3px;font-size:13px;width:auto}
 .hm th,.hm td{border:0;padding:0}
 .hm th{background:transparent;font-weight:600;font-size:12.5px;color:var(--text-2);text-align:center;padding:2px 0;cursor:default;position:static}
 .hm td.nm{padding:0 10px 0 0;font-size:14px;color:var(--text);position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap}
@@ -199,10 +201,12 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
 .madeby b{color:var(--text);font-weight:600}
 @media (max-width:600px){
   .filters{position:static}
+  .fgroup{width:100%}
+  .fgroup .flbl{min-width:44px}
   .al-name{width:100%}
   .al-name span:first-child{flex:1}
   .al-name .m{display:none}
-  .seg button{padding:10px 16px;min-height:44px}
+  .seg button{padding:10px 12px;min-height:44px}
   .alert-head select,select{min-height:44px}
   .bell,.btn-theme,.btn-clear{min-height:44px}
   select{min-width:0;width:100%}
@@ -227,10 +231,8 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
   </header>
 
   <div class="filters">
-    <label>กะ</label>
-    <div class="seg" id="shiftSeg">
-      <button data-v="ALL" class="on">ทั้งหมด</button><button data-v="A">กะ A</button><button data-v="B">กะ B</button>
-    </div>
+    <div class="fgroup hidden" id="groupWrap"><span class="flbl" id="groupLbl">ประเภท</span><div class="seg" id="groupSeg" role="group" aria-labelledby="groupLbl"></div></div>
+    <div class="fgroup"><span class="flbl" id="shiftLbl">กะ</span><div class="seg" id="shiftSeg" role="group" aria-labelledby="shiftLbl"><button data-v="ALL" class="on" aria-pressed="true">ทั้งหมด</button></div></div>
     <div class="search" role="combobox" aria-expanded="false" aria-haspopup="listbox" id="searchBox">
       <span class="ico">🔍</span>
       <input id="q" type="search" autocomplete="off" placeholder="พิมพ์ชื่อ หรือทะเบียนรถ เช่น สมชาย, 71-3416" aria-label="ค้นหาชื่อหรือทะเบียน" aria-controls="sugg">
@@ -273,7 +275,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
     <div class="grid2">
       <div class="card">
         <h2>ผลวัดรายวัน แยกตามการปฏิบัติ</h2>
-        <div class="desc">แต่ละแท่ง = จำนวน พขร. ที่วัดในวันนั้น</div>
+        <div class="desc">แต่ละแท่ง = จำนวนคนที่วัดในวันนั้น (วัดวันละ 2 ครั้ง ใช้ค่าที่สูงกว่า)</div>
         <div class="serieslegend" id="dailyLegend"></div>
         <div class="chart-box"><canvas id="ovDaily"></canvas></div>
       </div>
@@ -409,21 +411,36 @@ const $ = id => document.getElementById(id);
 
 function enrich(data) {
   data.drivers.forEach(d => {
-    d.readings.forEach(r => r.st = statusOf(r.sys, r.dia));
-    const S = d.readings.map(r=>r.sys).filter(Boolean), D = d.readings.map(r=>r.dia).filter(Boolean), P = d.readings.map(r=>r.pulse).filter(Boolean);
+    d.group = d.group || 'TPT';
+    // all = ทุกครั้งที่วัด (บางกลุ่มวัดวันละ 2 ครั้ง เช้า/บ่าย)
+    // readings = 1 ค่าต่อวัน (ค่าที่แย่ที่สุดของวัน) — ใช้กับแจ้งเตือน/ตารางสี/กราฟรายวัน เพื่อไม่นับคนซ้ำ
+    d.all = d.readings;
+    d.all.forEach(r => r.st = statusOf(r.sys, r.dia));
+    const byDay = {};
+    d.all.forEach(r => (byDay[r.date] = byDay[r.date] || []).push(r));
+    d.readings = Object.keys(byDay).sort().map(dt => {
+      const list = byDay[dt];
+      const w = list.reduce((a, r) => (LV[r.st].sev > LV[a.st].sev || (LV[r.st].sev === LV[a.st].sev && (r.sys || 0) > (a.sys || 0))) ? r : a);
+      return Object.assign({}, w, { date: dt, periods: list.length > 1 || list[0].period ? list : null });
+    });
+    d.hasPeriods = d.all.some(r => r.period);
+    const S = d.all.map(r=>r.sys).filter(Boolean), D = d.all.map(r=>r.dia).filter(Boolean), P = d.all.map(r=>r.pulse).filter(Boolean);
     d.avgSys = avg(S); d.avgDia = avg(D); d.avgPulse = avg(P);
     d.maxSys = S.length ? Math.max(...S) : null; d.maxDia = D.length ? Math.max(...D) : null;
-    d.n = d.readings.length;
-    d.nHigh = d.readings.filter(r => LV[r.st].over).length;          // เกิน 140/90
-    d.nSevere = d.readings.filter(r => r.st === 'l5' || r.st === 'l6').length;
-    d.nStop = d.readings.filter(r => r.st === 'l6').length;
-    d.nLow = d.readings.filter(r => r.st === 'low').length;
+    d.n = d.all.length;
+    d.nHigh = d.all.filter(r => LV[r.st].over).length;          // เกิน 140/90
+    d.nSevere = d.all.filter(r => r.st === 'l5' || r.st === 'l6').length;
+    d.nStop = d.all.filter(r => r.st === 'l6').length;
+    d.nLow = d.all.filter(r => r.st === 'low').length;
     d.pctHigh = d.n ? d.nHigh / d.n : 0;
+    // นโยบาย (ก): วันที่วัดหลายครั้ง ใช้ค่าที่แย่ที่สุดของวันทุกจุด — บ่ายปกติไม่ลบล้างเช้าที่สูงมาก
     d.last = d.readings[d.readings.length-1] || null;
     d.avgSt = statusOf(d.avgSys, d.avgDia);
-    d.worst = d.readings.reduce((w, r) => LV[r.st].sev > LV[w].sev ? r.st : w, 'none');
+    d.worst = d.all.reduce((w, r) => LV[r.st].sev > LV[w].sev ? r.st : w, 'none');
   });
   data.dates = [...new Set(data.drivers.flatMap(d => d.readings.map(r => r.date)))].sort();
+  data.groups = [...new Set(data.drivers.map(d => d.group))].sort((a, b) => (a !== 'TPT') - (b !== 'TPT') || a.localeCompare(b));
+  data.shifts = [...new Set(data.drivers.map(d => d.shift))].sort((a, b) => (a === '-') - (b === '-') || a.localeCompare(b));
   return data;
 }
 
@@ -431,7 +448,17 @@ function enrich(data) {
 let query = '';
 const norm = s => String(s || '').toLowerCase().replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '').replace(/[\s\-–.]/g, '');
 const matches = (d, q) => !q || norm(d.name).includes(q) || norm(d.plate).includes(q) || norm(d.name.replace(/^(นาย|นางสาว|นาง)/,'')).includes(q);
-const byShift = () => DATA.drivers.filter(d => shift === 'ALL' || d.shift === shift);
+let group = 'ALL';
+const tag = d => d.plate || d.group;
+const periodTxt = r => r && r.period ? ` (${r.period})` : '';
+// วันที่ที่มีข้อมูลของคนกลุ่มที่เลือก — "วันล่าสุด" ต้องเป็นของกลุ่มนั้น (Forklift กับ TPT วัดคนละวันได้)
+const datesOf = ds => [...new Set(ds.flatMap(d => d.readings.map(r => r.date)))].sort();
+// วันล่าสุดของแต่ละประเภท (TPT กับ Forklift วัดคนละวันได้) — ใช้กับ KPI วันล่าสุด / กล่องแจ้งเตือน / 🔔
+const latestByGroup = ds => { const m = {}; ds.forEach(d => d.readings.forEach(r => { if (!m[d.group] || r.date > m[d.group]) m[d.group] = r.date; })); return m; };
+const latestDesc = lg => { const g = Object.keys(lg).sort((a, b) => (a !== 'TPT') - (b !== 'TPT') || a.localeCompare(b));
+  const same = new Set(Object.values(lg)).size <= 1;
+  return same ? (g.length ? dLong(lg[g[0]]) : '') : g.map(x => `${x} ${dShort(lg[x])}`).join(' · '); };
+const byShift = () => DATA.drivers.filter(d => (shift === 'ALL' || d.shift === shift) && (group === 'ALL' || d.group === group));
 const visible = () => { const q = norm(query); return byShift().filter(d => matches(d, q)); };
 
 function hl(text, q) {
@@ -452,7 +479,7 @@ function showSugg(open) {
     .sort((a, b) => a.shift.localeCompare(b.shift) || a.name.localeCompare(b.name, 'th'));
   suggAct = q && suggItems.length ? 0 : -1;
   box.innerHTML = suggItems.length
-    ? suggItems.map((d, i) => `<li role="option" data-i="${i}" class="${i === suggAct ? 'act' : ''}"><span>${hl(d.name, q)}</span><span class="m">${hl(d.plate, q)} · กะ ${esc(d.shift)} ${chip(d.avgSt)}</span></li>`).join('')
+    ? suggItems.map((d, i) => `<li role="option" data-i="${i}" class="${i === suggAct ? 'act' : ''}"><span>${hl(d.name, q)}</span><span class="m">${d.plate ? hl(d.plate, q) : esc(d.group)} · กะ ${esc(d.shift)} ${chip(d.avgSt)}</span></li>`).join('')
     : `<li class="no">ไม่พบ “${esc(query)}”</li>`;
   box.classList.remove('hidden'); $('searchBox').setAttribute('aria-expanded', 'true');
   box.querySelectorAll('li[data-i]').forEach(li => li.onmousedown = e => { e.preventDefault(); pick(+li.dataset.i); });
@@ -501,7 +528,8 @@ const refLine = (label, value, n) => ({
 // ================= OVERVIEW =================
 function renderOverview() {
   const ds = visible();
-  const all = ds.flatMap(d => d.readings);
+  const VD = datesOf(ds);   // แกนเวลาเฉพาะวันที่กลุ่มที่เลือกมีข้อมูล
+  const all = ds.flatMap(d => d.all);
   const cntLv = k => all.filter(r => r.st === k).length;
   const nHigh = all.filter(r => LV[r.st].over).length;
   const watch = ds.filter(d => LV[d.avgSt].over).length;
@@ -509,20 +537,22 @@ function renderOverview() {
   note.classList.toggle('hidden', !query);
   if (query) note.innerHTML = `ผลการค้นหา “<b>${esc(query)}</b>”: พบ ${ds.length} คน — ตัวเลขและกราฟด้านล่างคำนวณเฉพาะคนที่ค้นพบ`;
   // KPI แยกช่วงเวลาชัดเจน: "วันล่าสุด" กับ "ทั้งเดือน" — กันอ่านตัวเลขทั้งเดือนเป็นของวันนี้
-  const lastDt = DATA.dates[DATA.dates.length - 1];
-  const today = ds.flatMap(d => d.readings.filter(r => r.date === lastDt));
+  const lastDt = VD[VD.length - 1];
+  const LG = latestByGroup(ds);
+  const today = ds.flatMap(d => d.readings.filter(r => r.date === LG[d.group]));
   const cntT = f => today.filter(f).length;
   const kpi = (k, v, u, h, cls = '') => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div></div>`;
   const nRecheck = cntT(r => r.st === 'l4'), nDoctor = cntT(r => r.st === 'l5' || r.st === 'l6'), nStop = cntT(r => r.st === 'l6');
-  const f = DATA.dates[0];
-  $('ovKpis').innerHTML = (lastDt ? `<div class="kgroup"><div class="kgroup-t">วันล่าสุด · <b>${dLong(lastDt)}</b></div><div class="kpis">` +
-      kpi('วัดแล้ว', today.length, `/ ${ds.length} คน`, 'จำนวน พขร. ที่มีผลวัดวันนี้') +
+  const f = VD[0];
+  if (!ds.length) { $('ovKpis').innerHTML = `<div class="card empty">ไม่มีพนักงานตามตัวกรองนี้ — ลองเลือก "ทั้งหมด" หรือล้างคำค้นหา</div>`; }
+  else $('ovKpis').innerHTML = (lastDt ? `<div class="kgroup"><div class="kgroup-t">ผลวัดล่าสุด · <b>${latestDesc(LG)}</b></div><div class="kpis">` +
+      kpi('วัดแล้ว', today.length, `/ ${ds.length} คน`, 'จำนวนพนักงานที่มีผลวัดวันนั้น') +
       kpi('✅ ขับได้', cntT(r => !LV[r.st].over), 'คน', 'ไม่เกิน 140/90' + (cntT(r => r.st === 'low') ? ` · ความดันต่ำ ${cntT(r => r.st === 'low')} คน (ดูอาการ)` : ''), 'ok') +
       kpi('▲ ต้องวัดซ้ำ', nRecheck, 'คน', 'สูงเล็กน้อย — นั่งพัก 5 นาทีแล้ววัดซ้ำ', nRecheck ? 'warn' : '') +
       kpi('⛔ พบแพทย์ / งดขับ', nDoctor, 'คน', nStop ? `สูงมาก (งดขับ) ${nStop} คน` : 'สูงปานกลาง หรือ สูงมาก', nDoctor ? 'crit' : '') +
     `</div></div>` : '') +
     `<div class="kgroup"><div class="kgroup-t">ทั้งเดือน · <b>${f ? dShort(f) : ''} – ${lastDt ? dLong(lastDt) : ''}</b></div><div class="kpis">` +
-      kpi('จำนวนครั้งที่วัด', all.length, 'ครั้ง', `${DATA.dates.length} วันทำการ · ${ds.length} คน`) +
+      kpi('จำนวนครั้งที่วัด', all.length, 'ครั้ง', `${VD.length} วันทำการ · ${ds.length} คน`) +
       kpi('ครั้งที่เกินเกณฑ์ขับ', all.length ? Math.round(nHigh / all.length * 100) : 0, '%', `${nHigh} จาก ${all.length} ครั้ง`) +
       kpi('ค่าเฉลี่ยทั้งเดือนเกินเกณฑ์', watch, 'คน', 'ควรติดตามใกล้ชิด / แนะนำพบแพทย์', watch ? 'warn' : '') +
     `</div></div>`;
@@ -537,8 +567,8 @@ function renderOverview() {
     { label: 'พบแพทย์ / งดขับ', color: '#c92a2a', ks: ['l5', 'l6'] },
   ];
   $('dailyLegend').innerHTML = GROUPS.map(g => `<span><i class="sw" style="background:${g.color}"></i>${g.label}</span>`).join('');
-  const labels = DATA.dates.map(dShort);
-  const cnt = ks => DATA.dates.map(dt => ds.reduce((a,d) => a + d.readings.filter(r => r.date===dt && ks.includes(r.st)).length, 0));
+  const labels = VD.map(dShort);
+  const cnt = ks => VD.map(dt => ds.reduce((a,d) => a + d.readings.filter(r => r.date===dt && ks.includes(r.st)).length, 0));
   const gap = css('--surface');
   const bar = (label, ks, color) => ({ label, data: cnt(ks), backgroundColor: color, borderColor: gap, borderWidth: {top:2}, borderRadius: 0, borderSkipped: false, maxBarThickness: 32 });
   mk('ovDaily', {
@@ -547,7 +577,7 @@ function renderOverview() {
     options: {
       maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: tooltipOpts({ callbacks: {
-        title: it => dLong(DATA.dates[it[0].dataIndex]),
+        title: it => dLong(VD[it[0].dataIndex]),
         label: c => ` ${c.dataset.label}: ${c.raw} คน`,
         footer: it => `รวม ${it.reduce((a,c)=>a+c.raw,0)} คน`
       }, filter: c => c.raw > 0, itemSort: (a, b) => b.datasetIndex - a.datasetIndex }) },
@@ -556,14 +586,14 @@ function renderOverview() {
   });
 
   // % คนเกินเกณฑ์ขับรายวัน — เห็นแนวโน้มดีขึ้น/แย่ลง ชัดกว่าค่าเฉลี่ยที่แทบเป็นเส้นตรง
-  const dayN = DATA.dates.map(dt => ds.reduce((a,d) => a + d.readings.filter(r => r.date === dt).length, 0));
-  const dayOver = DATA.dates.map(dt => ds.reduce((a,d) => a + d.readings.filter(r => r.date === dt && LV[r.st].over).length, 0));
+  const dayN = VD.map(dt => ds.reduce((a,d) => a + d.readings.filter(r => r.date === dt).length, 0));
+  const dayOver = VD.map(dt => ds.reduce((a,d) => a + d.readings.filter(r => r.date === dt && LV[r.st].over).length, 0));
   const pct = dayN.map((n, i) => n ? Math.round(dayOver[i] / n * 100) : null);
   const red = '#c92a2a';
   mk('ovAvg', {
     type: 'line',
     data: { labels, datasets: [ Object.assign(lineDs('เกินเกณฑ์', pct, red), { fill: true, backgroundColor: 'rgba(201,42,42,.10)', tension: .3 }) ] },
-    options: (() => { const o = lineOpts({ min: 0, suggestedMax: 60, ticks: { callback: v => v + '%' } }, it => dLong(DATA.dates[it[0].dataIndex]), '%');
+    options: (() => { const o = lineOpts({ min: 0, suggestedMax: 60, ticks: { callback: v => v + '%' } }, it => dLong(VD[it[0].dataIndex]), '%');
       o.scales.y.title = { display: true, text: '% ของคนที่วัด' };
       o.plugins.tooltip.callbacks.label = c => ` เกินเกณฑ์ ${c.raw}% (${dayOver[c.dataIndex]} จาก ${dayN[c.dataIndex]} คน)`;
       return o; })()
@@ -591,7 +621,7 @@ function lineOpts(y, titleFn, unit) {
 let sortKey = 'pctHigh', sortDir = -1;
 function renderTable(ds) {
   const cols = [
-    ['name','ชื่อ – สกุล',false], ['plate','ทะเบียน',false], ['shift','กะ',false],
+    ['name','ชื่อ – สกุล',false], ['plate','ทะเบียน / ประเภท',false], ['shift','กะ',false],
     ['last','ผลล่าสุด',false], ['avgSys','เฉลี่ยทั้งเดือน',false], ['avgPulse','ชีพจรเฉลี่ย',true],
     ['pctHigh','เกินเกณฑ์ (≥140/90)',true]
   ];
@@ -606,8 +636,8 @@ function renderTable(ds) {
   $('ovTable').innerHTML = `<thead><tr>${cols.map(([k,l,num]) =>
       `<th data-k="${k}" class="${num?'num':''}" tabindex="0" aria-sort="${k===sortKey ? (sortDir>0?'ascending':'descending') : 'none'}">${l}${k===sortKey ? (sortDir>0?' ▲':' ▼') : ''}</th>`).join('')}</tr></thead><tbody>` +
     rows.map(d => `<tr class="click" data-id="${d.id}">
-      <td><button class="namebtn" type="button" data-id="${d.id}">${esc(d.name)}</button></td><td>${esc(d.plate)}</td><td>${esc(d.shift)}</td>
-      <td>${d.last ? `${chip(d.last.st)} <span class="num">${d.last.sys ?? '–'}/${d.last.dia ?? '–'}</span> <span class="sub">${dShort(d.last.date)}</span>` : '–'}</td>
+      <td><button class="namebtn" type="button" data-id="${d.id}">${esc(d.name)}</button></td><td>${esc(tag(d))}</td><td>${esc(d.shift)}</td>
+      <td>${d.last ? `${chip(d.last.st)} <span class="num">${d.last.sys ?? '–'}/${d.last.dia ?? '–'}</span> <span class="sub">${dShort(d.last.date)}${periodTxt(d.last)}</span>` : '–'}</td>
       <td>${d.avgSys != null ? `${chip(d.avgSt)} <span class="num">${r0(d.avgSys)}/${r0(d.avgDia)}</span>` : '–'}</td>
       <td class="num">${r0(d.avgPulse)}</td>
       <td class="num"><span class="bartrack"><i style="width:${Math.round(d.pctHigh*100)}%;background:${(LV[d.worst].over ? LV[d.worst] : LV.l4).bg}"></i></span>${d.nHigh}/${d.n} ครั้ง</td>
@@ -621,16 +651,17 @@ function renderTable(ds) {
 }
 
 function renderHeatmap(ds) {
-  const dates = DATA.dates;
+  const dates = datesOf(ds);
   let html = `<thead><tr><th></th>${dates.map(dt => { const d = pd(dt); return `<th>${TH_DOW[d.getDay()]}<br>${d.getDate()}</th>`; }).join('')}</tr></thead><tbody>`;
   let prev = null;
   ds.forEach(d => {
-    if (prev !== null && prev !== d.shift) html += `<tr class="sep"><td colspan="${dates.length+1}"></td></tr>`;
-    prev = d.shift;
+    const gk = d.group + '|' + d.shift;
+    if (prev !== gk) html += `<tr class="sep"><td colspan="${dates.length+1}"></td></tr>` + (DATA.groups.length > 1 && (!prev || prev.split('|')[0] !== d.group) ? `<tr><td class="nm"><b>${esc(d.group)}</b></td></tr>` : '');
+    prev = gk;
     const by = Object.fromEntries(d.readings.map(r => [r.date, r]));
-    html += `<tr><td class="nm"><button class="namebtn" type="button" data-id="${d.id}">${esc(d.name)}</button> <span class="m">${esc(d.plate)} · ${esc(d.shift)}</span></td>` +
+    html += `<tr><td class="nm"><button class="namebtn" type="button" data-id="${d.id}">${esc(d.name)}</button> <span class="m">${esc(d.plate || '')}${d.plate ? ' · ' : ''}${esc(d.shift)}</span></td>` +
       dates.map(dt => { const r = by[dt]; if (!r) return `<td class="c none" data-tip="${esc(d.name)} · ${dLong(dt)} · ไม่มีข้อมูล"></td>`;
-        return `<td class="c lv-${r.st}" data-tip="${esc(d.name)} · ${dLong(dt)} · ${r.sys ?? '–'}/${r.dia ?? '–'} mmHg · ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}"><b>${r.sys ?? '–'}</b><span>${r.dia ?? '–'}</span></td>`; }).join('') + '</tr>';
+        return `<td class="c lv-${r.st}" data-tip="${esc(d.name)} · ${dLong(dt)} · ${r.periods ? r.periods.map(x => `${x.period || ''} ${x.sys ?? '–'}/${x.dia ?? '–'} ${LV[x.st].label}`).join(' | ') : `${r.sys ?? '–'}/${r.dia ?? '–'} mmHg · ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}`}"><b>${r.sys ?? '–'}</b><span>${r.dia ?? '–'}</span></td>`; }).join('') + '</tr>';
   });
   $('heatmap').innerHTML = html + '</tbody>';
   $('heatmap').querySelectorAll('.namebtn').forEach(b => b.onclick = () => selectPerson(+b.dataset.id));
@@ -650,27 +681,34 @@ function renderPerson() {
   const d = DATA.drivers.find(x => x.id === personId);
   if (!d) return;
   $('pName').textContent = d.name;
-  $('pMeta').textContent = `ทะเบียน ${d.plate || '–'} · กะ ${d.shift}${d.dept ? ' · ' + d.dept : ''}${d.note ? ' · ' + d.note : ''}`;
+  $('pMeta').textContent = `${d.plate ? 'ทะเบียน ' + d.plate + ' · ' : ''}${d.group} · กะ ${d.shift}${d.dept ? ' · ' + d.dept : ''}${d.note ? ' · ' + d.note : ''}${d.hasPeriods ? ' · วัดวันละ 2 ครั้ง (เช้า/บ่าย)' : ''}`;
   $('pChip').innerHTML = chip(d.avgSt);
-  const minP = d.readings.map(r=>r.pulse).filter(Boolean);
+  const minP = d.all.map(r=>r.pulse).filter(Boolean);
   const adv = $('pAdvice');
   if (d.last) {
     const L = LV[d.last.st];
     adv.style.borderLeftColor = L.bg;
-    adv.innerHTML = `<span>${chip(d.last.st)}</span><div><b>คำแนะนำจากค่าล่าสุด (${dLong(d.last.date)}: ${d.last.sys ?? '–'}/${d.last.dia ?? '–'} mmHg)</b><br>${esc(L.act)}</div>`;
+    const many = d.last.periods && d.last.periods.length > 1;
+    adv.innerHTML = `<span>${chip(d.last.st)}</span><div><b>คำแนะนำจากผลวันล่าสุด (${dLong(d.last.date)}: ${d.last.sys ?? '–'}/${d.last.dia ?? '–'} mmHg${many ? ' ' + esc(d.last.period || '') : ''})</b><br>${esc(L.act)}` +
+      (many ? `<div class="sub" style="margin-top:4px">วันนี้วัด ${d.last.periods.length} ครั้ง: ${d.last.periods.map(x => `${esc(x.period || '')} ${x.sys ?? '–'}/${x.dia ?? '–'} ${chip(x.st)}`).join(' · ')} — ใช้ค่าที่สูงกว่าเพื่อความปลอดภัย</div>` : '') + `</div>`;
     adv.classList.remove('hidden');
   } else adv.classList.add('hidden');
   $('pKpis').innerHTML = [
     ['ความดันเฉลี่ย', `${r0(d.avgSys)}/${r0(d.avgDia)}`, 'mmHg', STATUS[d.avgSt].label],
-    ['ล่าสุด', d.last ? `${d.last.sys ?? '–'}/${d.last.dia ?? '–'}` : '–', 'mmHg', d.last ? dLong(d.last.date) : ''],
+    ['ผลวันล่าสุด', d.last ? `${d.last.sys ?? '–'}/${d.last.dia ?? '–'}` : '–', 'mmHg', d.last ? dLong(d.last.date) + periodTxt(d.last) + (d.last.periods && d.last.periods.length > 1 ? ' · ค่าที่สูงกว่าของวัน' : '') : ''],
     ['สูงสุด (บน/ล่าง)', `${d.maxSys ?? '–'}/${d.maxDia ?? '–'}`, 'mmHg', 'ค่าสูงสุดของแต่ละตัว'],
-    ['วันที่เกินเกณฑ์ (≥140/90)', d.nHigh, `/ ${d.n} วัน`, `สูงปานกลาง ${d.readings.filter(r=>r.st==='l5').length} · สูงมาก ${d.nStop} · ต่ำ ${d.nLow}`],
+    ['ครั้งที่เกินเกณฑ์ (≥140/90)', d.nHigh, `/ ${d.n} ครั้ง`, `สูงปานกลาง ${d.all.filter(r=>r.st==='l5').length} · สูงมาก ${d.nStop} · ต่ำ ${d.nLow}`],
     ['ชีพจรเฉลี่ย', r0(d.avgPulse), 'ครั้ง/นาที', minP.length ? `ต่ำสุด ${Math.min(...minP)} · สูงสุด ${Math.max(...minP)}` : ''],
   ].map(([k,v,u,h]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div></div>`).join('');
 
-  const dates = DATA.dates;
-  const by = Object.fromEntries(d.readings.map(r => [r.date, r]));
-  const labels = dates.map(dShort);
+  // แกน X: วันละ 1 จุด หรือแยก เช้า/บ่าย ถ้ากลุ่มนั้นวัดวันละ 2 ครั้ง
+  const PORD = { 'เช้า': 0, 'บ่าย': 1, 'เย็น': 2, 'ดึก': 3 };
+  const pers = [...new Set(d.all.map(r => r.period || ''))].sort((x, y) => (PORD[x] ?? 9) - (PORD[y] ?? 9));
+  const gd = datesOf(DATA.drivers.filter(x => x.group === d.group));
+  const dates = d.hasPeriods ? gd.flatMap(dt => pers.map(pp => dt + '|' + pp)) : gd;
+  const by = Object.fromEntries(d.all.map(r => [d.hasPeriods ? r.date + '|' + (r.period || '') : r.date, r]));
+  const slotLong = k => { const [dt, pp] = k.split('|'); return dLong(dt) + (pp ? ' · ' + pp : ''); };
+  const labels = dates.map(k => { const [dt, pp] = k.split('|'); return dShort(dt) + (pp ? ' ' + pp : ''); });
   const ser = k => dates.map(dt => by[dt] ? (by[dt][k] ?? null) : null);
   const ptColor = (k, base, lim) => dates.map(dt => by[dt] && by[dt][k] >= lim ? LV[by[dt].st].bg : base);
   const sysC = css('--sys'), diaC = css('--dia');
@@ -681,7 +719,7 @@ function renderPerson() {
       lineDs('ตัวล่าง', ser('dia'), diaC, { pointBackgroundColor: ptColor('dia', diaC, 90), pointRadius: dates.map(dt => by[dt] && by[dt].dia >= 90 ? 6 : 4) }),
       refLine('เกณฑ์ 140', 140, labels.length), refLine('เกณฑ์ 90', 90, labels.length)
     ]},
-    options: (() => { const o = lineOpts({ suggestedMin: 60, suggestedMax: 170 }, it => dLong(dates[it[0].dataIndex]), ' mmHg');
+    options: (() => { const o = lineOpts({ suggestedMin: 60, suggestedMax: 170 }, it => slotLong(dates[it[0].dataIndex]), ' mmHg');
       o.plugins.tooltip.callbacks.footer = it => { const r = by[dates[it[0].dataIndex]]; return r ? `ชีพจร ${r.pulse ?? '–'} · ${STATUS[r.st].label}` : 'ไม่มีข้อมูล'; };
       return o; })()
   });
@@ -695,11 +733,11 @@ function renderPerson() {
       { label: 'ขอบล่าง', data: Array(labels.length).fill(60), borderWidth: 0, pointRadius: 0, fill: false, isRef: true, order: 10 },
       lineDs('ชีพจร', ser('pulse'), pulseC)
     ]},
-    options: lineOpts({ suggestedMin: 40, suggestedMax: 120 }, it => dLong(dates[it[0].dataIndex]), ' ครั้ง/นาที')
+    options: lineOpts({ suggestedMin: 40, suggestedMax: 120 }, it => slotLong(dates[it[0].dataIndex]), ' ครั้ง/นาที')
   });
 
   $('pTable').innerHTML = `<thead><tr><th>วันที่</th><th class="num">บน</th><th class="num">ล่าง</th><th class="num">ชีพจร</th><th>ระดับ</th></tr></thead><tbody>` +
-    (d.readings.length ? d.readings.slice().reverse().map(r => `<tr><td>${dLong(r.date)}</td><td class="num">${r.sys ?? '–'}</td><td class="num">${r.dia ?? '–'}</td><td class="num">${r.pulse ?? '–'}</td><td>${chip(r.st)}</td></tr>`).join('')
+    (d.all.length ? d.all.slice().reverse().map(r => `<tr><td>${dLong(r.date)}${periodTxt(r)}</td><td class="num">${r.sys ?? '–'}</td><td class="num">${r.dia ?? '–'}</td><td class="num">${r.pulse ?? '–'}</td><td>${chip(r.st)}</td></tr>`).join('')
       : `<tr><td colspan="5" class="empty">ยังไม่มีข้อมูลการวัด</td></tr>`) + '</tbody>';
 }
 
@@ -707,7 +745,7 @@ function selectPerson(id) {
   personId = id || null;
   const d = personId && DATA.drivers.find(x => x.id === personId);
   query = '';
-  $('q').value = d ? `${d.name} (${d.plate})` : '';
+  $('q').value = d ? `${d.name} (${tag(d)})` : '';
   syncSearchUI();
   try { history.replaceState(null, '', personId ? '#p' + personId : location.pathname + location.search); } catch(e) {}
   render();
@@ -728,16 +766,27 @@ function overReadings(date, drivers) {
   return out.sort((a, b) => LV[b.r.st].sev - LV[a.r.st].sev || (b.r.sys || 0) - (a.r.sys || 0));
 }
 
+// คนที่เกินเกณฑ์ในวันที่เลือก หรือ (date = null) ในวันล่าสุดของประเภทตัวเอง
+function latestOver(ds, date) {
+  const LG = latestByGroup(ds), out = [];
+  ds.forEach(d => d.readings.forEach(r => { if (r.date === (date || LG[d.group]) && LV[r.st].over) out.push({ d, r }); }));
+  return out.sort((a, b) => LV[b.r.st].sev - LV[a.r.st].sev || (b.r.sys || 0) - (a.r.sys || 0));
+}
 function renderAlerts() {
-  const dates = DATA.dates;
+  const dates = datesOf(byShift());
   const sel = $('alertDate');
-  if (!dates.length) { $('alertCard').classList.add('hidden'); return; }
-  const date = alertDate && dates.includes(alertDate) ? alertDate : dates[dates.length - 1];
-  sel.innerHTML = dates.slice().reverse().map((dt, i) => `<option value="${dt}">${dLong(dt)}${i === 0 ? ' (ล่าสุด)' : ''}</option>`).join('');
-  sel.value = date;
+  $('alertCard').classList.toggle('hidden', !dates.length);
+  if (!dates.length) { $('bellBtn').classList.add('hidden'); return; }
   const ds = byShift();
-  const measured = ds.filter(d => d.readings.some(r => r.date === date)).length;
-  const items = overReadings(date, ds);
+  const LG = latestByGroup(ds);
+  const date = alertDate && dates.includes(alertDate) ? alertDate : null;   // null = ล่าสุดของแต่ละประเภท
+  sel.innerHTML = `<option value="">ล่าสุด · ${latestDesc(LG)}</option>` +
+    dates.slice().reverse().filter(dt => !(new Set(Object.values(LG)).size === 1 && LG[Object.keys(LG)[0]] === dt))
+      .map(dt => `<option value="${dt}">${dLong(dt)}</option>`).join('');
+  sel.value = date || '';
+  const onDay = d => r => r.date === (date || LG[d.group]);
+  const measured = ds.filter(d => d.readings.some(onDay(d))).length;
+  const items = latestOver(ds, date);
   const card = $('alertCard');
   card.classList.toggle('ok', items.length === 0);
   $('alertTitle').textContent = items.length ? `🚨 ต้องติดตาม ${items.length} คน` : '✅ ไม่มีผู้ที่ต้องติดตาม';
@@ -751,13 +800,13 @@ function renderAlerts() {
           <div class="al-ghead">${chip(k)}<span class="n">${cnt(k)} คน</span><span class="act">${esc(L.act)}</span></div>
           <div class="al-names">${items.filter(x => x.r.st === k).map(({ d, r }) =>
             `<button class="al-item al-name" data-id="${d.id}" type="button" title="ชีพจร ${r.pulse ?? '–'} · คลิกเพื่อดูประวัติ">
-              <span>${esc(d.name)}</span><span class="v">${r.sys ?? '–'}/${r.dia ?? '–'}</span><span class="m">${esc(d.plate)} · กะ ${esc(d.shift)}</span>${newKeys.has(alertKey(d, r)) ? '<span class="new">ใหม่</span>' : ''}</button>`).join('')}</div></div>`;
+              <span>${esc(d.name)}</span><span class="v">${r.sys ?? '–'}/${r.dia ?? '–'}${r.period ? ` <small>${esc(r.period)}</small>` : ''}</span><span class="m">${esc(tag(d))} · กะ ${esc(d.shift)}${!date && new Set(Object.values(LG)).size > 1 ? ' · ' + dShort(r.date) : ''}</span>${newKeys.has(alertKey(d, r)) ? '<span class="new">ใหม่</span>' : ''}</button>`).join('')}</div></div>`;
       }).join('')
-    : `<div class="al-ok">ผลวัด ${dLong(date)} ทั้ง ${measured} คน ความดันไม่เกิน 140/90 — ขับรถได้ตามปกติ</div>`;
+    : `<div class="al-ok">ผลวัด ${date ? dLong(date) : 'ล่าสุด (' + latestDesc(LG) + ')'} ทั้ง ${measured} คน ความดันไม่เกิน 140/90 — ขับรถได้ตามปกติ</div>`;
   $('alertBody').querySelectorAll('.al-item').forEach(b => b.onclick = () => selectPerson(+b.dataset.id));
 
   // badge + title นับเฉพาะวันล่าสุด
-  const latest = overReadings(dates[dates.length - 1], ds);
+  const latest = latestOver(ds, null);
   const bell = $('bellBtn');
   bell.classList.remove('hidden');
   bell.classList.toggle('ok', latest.length === 0);
@@ -831,11 +880,27 @@ function render() {
   if (personId) renderPerson(); else renderOverview();
 }
 
-$('shiftSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
-  shift = b.dataset.v;
-  $('shiftSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-  fillSelect(); render();
-});
+// ปุ่มตัวกรอง ประเภท / กะ สร้างจากข้อมูลจริง (มีกลุ่ม/กะใหม่ในไฟล์ก็ขึ้นเอง)
+function buildFilters() {
+  const seg = (id, items, cur, label, set, rebuild) => {
+    const el = $(id);
+    if (!items.includes(cur)) { cur = 'ALL'; set('ALL'); }
+    el.innerHTML = `<button data-v="ALL" class="${cur === 'ALL' ? 'on' : ''}" aria-pressed="${cur === 'ALL'}">ทั้งหมด</button>` +
+      items.map(v => `<button data-v="${esc(v)}" class="${cur === v ? 'on' : ''}" aria-pressed="${cur === v}">${esc(label(v))}</button>`).join('');
+    el.querySelectorAll('button').forEach(b => b.onclick = () => {
+      set(b.dataset.v);
+      el.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+      if (rebuild) buildFilters();
+      fillSelect(); render();
+    });
+  };
+  seg('groupSeg', DATA.groups, group, v => v, v => { group = v; }, true);
+  // แสดงเฉพาะกะที่มีในประเภทที่เลือก (TPT ไม่มีกะ JP)
+  const shifts = [...new Set(DATA.drivers.filter(d => group === 'ALL' || d.group === group).map(d => d.shift))]
+    .sort((a, b) => (a === '-') - (b === '-') || a.localeCompare(b));
+  seg('shiftSeg', shifts, shift, v => v === '-' ? 'ไม่ระบุ' : 'กะ ' + v, v => { shift = v; });
+  $('groupWrap').classList.toggle('hidden', DATA.groups.length < 2);
+}
 const qEl = $('q');
 qEl.addEventListener('input', () => {
   query = qEl.value.trim();
@@ -853,7 +918,7 @@ qEl.addEventListener('keydown', e => {
 });
 $('qClear').onclick = () => { selectPerson(null); qEl.focus(); };
 $('clearBtn').onclick = () => selectPerson(null);
-$('alertDate').onchange = e => { alertDate = e.target.value === DATA.dates[DATA.dates.length - 1] ? null : e.target.value; renderAlerts(); };
+$('alertDate').onchange = e => { alertDate = e.target.value || null; renderAlerts(); };
 $('bellBtn').onclick = () => {
   if (personId) selectPerson(null);
   alertDate = null; renderAlerts();
@@ -875,9 +940,10 @@ $('critTable').innerHTML = `<thead><tr><th>ระดับความดัน<
 const REFRESH_MS = 5 * 60 * 1000;
 function applyData(data, first) {
   DATA = enrich(data);
+  buildFilters();
   checkNewAlerts(first);
   const f = DATA.dates[0], l = DATA.dates[DATA.dates.length-1];
-  $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · พขร. ${DATA.drivers.length} คน` : 'ยังไม่มีข้อมูล';
+  $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · ${DATA.groups.map(g => `${g} ${DATA.drivers.filter(d => d.group === g).length} คน`).join(' · ')}` : 'ยังไม่มีข้อมูล';
   const g = new Date(DATA.generatedAt);
   $('liveNote').innerHTML = `<i></i> ข้อมูลอัปเดตล่าสุด ${g.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} · หน้านี้รีเฟรชข้อมูลอัตโนมัติทุก 5 นาที`;
   $('foot').textContent = `แหล่งข้อมูล: ${DATA.sources.join(', ')} · เกณฑ์อ้างอิง: โรงพยาบาลศิริราชปิยมหาราชการุณย์ / องค์การอนามัยโลก (WHO)`;

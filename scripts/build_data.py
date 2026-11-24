@@ -88,12 +88,31 @@ def parse_month(text, fallback):
     return year, month
 
 
+PERIOD_ORDER = {"เช้า": 0, "บ่าย": 1, "เย็น": 2, "ดึก": 3}
+
+
+def sheet_group(title):
+    """ประเภทพนักงานจากชื่อชีต: "TPT A,B" -> TPT, "Forklift A,B" / "Forklift JP" -> Forklift
+    ชีตรุ่นเก่า ("กะ A", "กะ B", "กะ A (2)") = TPT"""
+    t = re.sub(r"\s*\(\d+\)\s*$", "", clean(title))
+    # ตัดรหัสกะท้ายชื่อ (A, B, A,B, A-B, JP, กะ A ...) — รหัสกะเป็นตัวอักษร 1–2 ตัว
+    t = re.sub(r"(\s+(กะ\s*)?[A-Za-z]{1,2}([\s,/&\-]+[A-Za-z]{1,2})*|\s*กะ\s*[A-Za-z]{1,2})\s*$", "", t).strip()
+    return t or "TPT"
+
+
 def parse_sheet(ws, fallback_ym):
     rows = list(ws.iter_rows(values_only=True))
     hdr_idx = next((i for i, r in enumerate(rows) if r and clean(r[0]) == NAME_HEADER), None)
-    if hdr_idx is None or hdr_idx + 2 >= len(rows):
+    if hdr_idx is None:
         return []
-    hdr, day_row, sub_row = rows[hdr_idx], rows[hdr_idx + 1], rows[hdr_idx + 2]
+    # หาแถว บน/ล่าง/ชีพจร ภายใน 4 แถวถัดจากหัวตาราง (บางชีตมีแถว เช้า/บ่าย คั่นอยู่)
+    sub_idx = next((i for i in range(hdr_idx + 1, min(hdr_idx + 5, len(rows)))
+                    if rows[i] and any(clean(v) in SUB_LABELS for v in rows[i])), None)
+    if sub_idx is None:
+        return []
+    hdr, sub_row = rows[hdr_idx], rows[sub_idx]
+    day_row = rows[hdr_idx + 1] if hdr_idx + 1 < sub_idx else ()
+    period_row = rows[sub_idx - 1] if sub_idx - 1 > hdr_idx + 1 else ()
 
     col_plate = col_shift = col_dept = col_note = None
     month_text = ""
@@ -111,18 +130,22 @@ def parse_sheet(ws, fallback_ym):
             month_text = t
     year, month = parse_month(month_text, fallback_ym)
 
-    # map column -> (date iso, metric)
+    # map column -> (date iso, ช่วงเวลา, metric)
     colmap = {}
-    current_day = None
+    current_day, current_period = None, ""
     for c in range(len(sub_row)):
         if c < len(day_row) and day_row[c] is not None:
             current_day = to_date(day_row[c], year, month)
+            current_period = ""
+        if c < len(period_row) and clean(period_row[c]):
+            current_period = clean(period_row[c])
         key = SUB_LABELS.get(clean(sub_row[c]))
         if key and current_day:
-            colmap[c] = (current_day.isoformat(), key)
+            colmap[c] = (current_day.isoformat(), current_period, key)
 
+    group = sheet_group(ws.title)
     people = []
-    for r in rows[hdr_idx + 3:]:
+    for r in rows[sub_idx + 1:]:
         if not r:
             continue
         name = clean(r[0])
@@ -130,12 +153,13 @@ def parse_sheet(ws, fallback_ym):
             continue
         get = lambda c: clean(r[c]) if c is not None and c < len(r) else ""
         readings = {}
-        for c, (iso, key) in colmap.items():
+        for c, (iso, period, key) in colmap.items():
             v = to_num(r[c]) if c < len(r) else None
             if v is not None:
-                readings.setdefault(iso, {})[key] = v
+                readings.setdefault((iso, period), {})[key] = v
         people.append({
             "name": name,
+            "group": group,
             "plate": get(col_plate),
             "shift": get(col_shift).upper() or "-",
             "dept": get(col_dept),
@@ -154,6 +178,7 @@ def main():
         sys.exit("ไม่พบไฟล์ Excel (.xlsx) ในโฟลเดอร์ data/")
 
     merged = {}
+    group_names = {}
     today = date.today()
     used = []
     for f in files:
@@ -165,28 +190,31 @@ def main():
         used.append(f)
         for ws in wb.worksheets:
             for p in parse_sheet(ws, (today.year, today.month)):
-                key = (p["name"], p["shift"])
+                # "forklift A,B" กับ "Forklift A,B" = ประเภทเดียวกัน (ใช้ตัวสะกดที่เจอครั้งแรก)
+                p["group"] = group_names.setdefault(p["group"].casefold(), p["group"])
+                key = (p["group"], p["name"], p["shift"])
                 cur = merged.setdefault(key, {**p, "readings": {}})
                 for k in ("plate", "dept", "note"):
                     if p[k]:
                         cur[k] = p[k]
-                for iso, vals in p["readings"].items():
-                    cur["readings"].setdefault(iso, {}).update(vals)
+                for slot, vals in p["readings"].items():
+                    cur["readings"].setdefault(slot, {}).update(vals)
         print(f"อ่านไฟล์: {os.path.basename(f)}")
 
     if not used:
         sys.exit("อ่านไฟล์ Excel ไม่ได้เลยสักไฟล์")
 
     drivers = []
-    for i, p in enumerate(sorted(merged.values(), key=lambda x: (x["shift"], x["plate"], x["name"]))):
+    for i, p in enumerate(sorted(merged.values(), key=lambda x: (x["group"] != "TPT", x["group"], x["shift"], x["plate"], x["name"]))):
         readings = [
-            {"date": iso, **v}
-            for iso, v in sorted(p["readings"].items())
+            {"date": iso, **({"period": period} if period else {}), **v}
+            for (iso, period), v in sorted(p["readings"].items(), key=lambda kv: (kv[0][0], PERIOD_ORDER.get(kv[0][1], 9), kv[0][1]))
             if v.get("sys") or v.get("dia")
         ]
         drivers.append({
             "id": i + 1,
             "name": p["name"],
+            "group": p["group"],
             "plate": p["plate"],
             "shift": p["shift"],
             "dept": p["dept"],
