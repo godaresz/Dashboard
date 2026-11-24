@@ -141,6 +141,12 @@ select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px
 
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.kpi-btn{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
+.kpi-btn:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.kpi-btn .go{display:block;margin-top:4px;font-size:12.5px;font-weight:600;color:var(--accent)}
+.list-filter{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;margin:0 0 10px;border-radius:10px;background:var(--warn-bg);color:var(--warn-ink);font-size:14px}
+.list-filter b{color:inherit}
+.list-filter button{font:inherit;font-size:13px;border:1px solid currentColor;background:transparent;color:inherit;border-radius:999px;padding:3px 12px;cursor:pointer;min-height:32px}
 .kpi .k{font-size:13px;color:var(--text-2)}
 .kpi .v{font-size:30px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
 .kpi .v small{font-size:15px;font-weight:500;color:var(--text-2);margin-left:4px}
@@ -295,6 +301,7 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
     <div class="card">
       <h2>สรุปรายบุคคล</h2>
       <div class="desc">คลิกชื่อเพื่อดูกราฟรายคน · คลิกหัวคอลัมน์เพื่อเรียงลำดับ</div>
+      <div class="list-filter hidden" id="listFilter" role="status"></div>
       <div class="tbl-wrap"><table id="ovTable"></table></div>
     </div>
     </div>
@@ -545,7 +552,9 @@ function renderOverview() {
   const LG = latestByGroup(ds);
   const today = ds.flatMap(d => d.readings.filter(r => r.date === LG[d.group]));
   const cntT = f => today.filter(f).length;
-  const kpi = (k, v, u, h, cls = '') => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div></div>`;
+  const kpi = (k, v, u, h, cls = '', act = '') => act
+    ? `<button type="button" class="kpi kpi-btn ${cls}" data-act="${act}"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div><span class="go">ดูรายชื่อ ›</span></button>`
+    : `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="h">${h}</div></div>`;
   const nRecheck = cntT(r => r.st === 'l4'), nDoctor = cntT(r => r.st === 'l5' || r.st === 'l6'), nStop = cntT(r => r.st === 'l6');
   const f = VD[0];
   if (!ds.length) { $('ovKpis').innerHTML = `<div class="card empty">ไม่มีพนักงานตามตัวกรองนี้ — ลองเลือก "ทั้งหมด" หรือล้างคำค้นหา</div>`; }
@@ -558,9 +567,10 @@ function renderOverview() {
     `<div class="kgroup"><div class="kgroup-t">ทั้งเดือน · <b>${f ? dShort(f) : ''} – ${lastDt ? dLong(lastDt) : ''}</b></div><div class="kpis">` +
       kpi('จำนวนครั้งที่วัด', all.length, 'ครั้ง', `${VD.length} วันทำการ · ${ds.length} คน`) +
       kpi('ครั้งที่เกินเกณฑ์ขับ', all.length ? Math.round(nHigh / all.length * 100) : 0, '%', `${nHigh} จาก ${all.length} ครั้ง`) +
-      kpi('ค่าเฉลี่ยทั้งเดือนเกินเกณฑ์', watch, 'คน', 'ควรติดตามใกล้ชิด / แนะนำพบแพทย์', watch ? 'warn' : '') +
+      kpi('ค่าเฉลี่ยทั้งเดือนเกินเกณฑ์', watch, 'คน', 'ควรติดตามใกล้ชิด / แนะนำพบแพทย์', watch ? 'warn' : '', watch ? 'avgOver' : '') +
     `</div></div>`;
   $('tabListN').textContent = `(${ds.length})`;
+  $('ovKpis').querySelectorAll('.kpi-btn[data-act="avgOver"]').forEach(b => b.onclick = () => openAvgOver());
 
   // daily stacked
   // รวมเป็นกลุ่มตาม "สิ่งที่ต้องทำ" แทน 7 ระดับ — อ่านง่ายกว่าและตรงกับการตัดสินใจหน้างาน
@@ -623,7 +633,20 @@ function lineOpts(y, titleFn, unit) {
 }
 
 let sortKey = 'pctHigh', sortDir = -1;
+let listFilter = null;   // 'avgOver' = เฉพาะคนที่ค่าเฉลี่ยทั้งเดือน ≥140/90 (มาจากการกดการ์ด KPI)
+function openAvgOver() {
+  listFilter = 'avgOver'; sortKey = 'avgSys'; sortDir = -1;
+  showTab('list'); render();
+  requestAnimationFrame(() => document.querySelector('.tabpanel[data-panel="list"]').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+}
 function renderTable(ds) {
+  const fb = $('listFilter');
+  if (listFilter === 'avgOver') {
+    ds = ds.filter(d => LV[d.avgSt].over);
+    fb.innerHTML = `แสดงเฉพาะ <b>ค่าเฉลี่ยทั้งเดือนเกินเกณฑ์ (≥140/90) · ${ds.length} คน</b> — เรียงจากค่าเฉลี่ยสูงสุด <button type="button" id="listFilterClear">✕ แสดงทั้งหมด</button>`;
+    fb.classList.remove('hidden');
+    $('listFilterClear').onclick = () => { listFilter = null; sortKey = 'pctHigh'; sortDir = -1; render(); };
+  } else fb.classList.add('hidden');
   const cols = [
     ['name','ชื่อ – สกุล',false], ['plate','ทะเบียน / ประเภท',false], ['shift','กะ',false],
     ['last','ผลล่าสุด',false], ['avgSys','เฉลี่ยทั้งเดือน',false], ['avgPulse','ชีพจรเฉลี่ย',true],
