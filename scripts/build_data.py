@@ -182,6 +182,7 @@ def main():
     group_names = {}
     today = date.today()
     used = []
+    modified = {}
     for f in files:
         try:
             wb = openpyxl.load_workbook(f, data_only=True, read_only=True)
@@ -189,6 +190,9 @@ def main():
             print(f"⚠️ ข้ามไฟล์ {os.path.basename(f)}: {e}")
             continue
         used.append(f)
+        # เวลาบันทึกไฟล์ล่าสุดจาก Excel เอง (docProps — เป็น UTC) — mtime ของไฟล์ใน GitHub Actions คือเวลา checkout ใช้ไม่ได้
+        mod = getattr(wb.properties, "modified", None)
+        modified[f] = mod.replace(tzinfo=timezone.utc).isoformat(timespec="seconds") if isinstance(mod, datetime) else ""
         for ws in wb.worksheets:
             for p in parse_sheet(ws, (today.year, today.month)):
                 # "forklift A,B" กับ "Forklift A,B" = ประเภทเดียวกัน (ใช้ตัวสะกดที่เจอครั้งแรก)
@@ -235,7 +239,7 @@ def main():
     source_files = []
     for f in used:
         shutil.copyfile(f, os.path.join(src_dir, os.path.basename(f)))
-        source_files.append({"name": os.path.basename(f), "size": os.path.getsize(f)})
+        source_files.append({"name": os.path.basename(f), "size": os.path.getsize(f), "modified": modified.get(f, "")})
 
     out = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
