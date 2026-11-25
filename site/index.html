@@ -1069,11 +1069,19 @@ const exSetDate = (id, iso) => { $(id).value = dmy(iso); $(id).setAttribute('ari
 const srcName = n => { const base = n.replace(/\.[^.]+$/, ''), ext = (n.match(/\.[^.]+$/) || ['.xlsx'])[0];
   const asc = base.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   return ['BP_source', asc, DATA.dates[DATA.dates.length - 1]].filter(Boolean).join('_') + ext; };
+// เวลาบันทึกไฟล์ล่าสุด (จาก Excel) เป็นเวลาไทย DD/MM/YYYY HH:mm น. · ไฟล์ไม่มีเวลาบันทึก → วันที่ข้อมูลล่าสุด
+function srcWhen(f) {
+  const t = f.modified ? new Date(f.modified) : null;
+  if (!t || isNaN(t)) return dmy(DATA.dates[DATA.dates.length - 1]);
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(t).map(x => [x.type, x.value]));
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute} น.`;
+}
 function exRenderSources() {
   const files = DATA.sourceFiles || [];
   const size = n => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   $('exSrcList').innerHTML = files.length ? files.map(f => `<li><a class="ex-btn src" href="source/${encodeURIComponent(f.name)}" download="${esc(srcName(f.name))}">⬇ ดาวน์โหลด</a>
-    <span class="fname">📗 ${esc(f.name)}</span><span class="fsize">${size(f.size)} · ข้อมูล ณ ${esc(dmy(DATA.dates[DATA.dates.length - 1]))}</span></li>`).join('')
+    <span class="fname">📗 ${esc(f.name)}</span><span class="fsize">${size(f.size)} · ข้อมูล ณ ${esc(srcWhen(f))}</span></li>`).join('')
     : '<li class="fsize">ยังไม่มีไฟล์ให้ดาวน์โหลด (จะมีหลังระบบอัปเดตข้อมูลครั้งถัดไป)</li>';
 }
 function exInit() {
