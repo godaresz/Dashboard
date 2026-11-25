@@ -225,6 +225,23 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
 }
 .empty{color:var(--text-3);padding:24px;text-align:center}
 
+/* ================= ดึงข้อมูล / รายงาน ================= */
+.ex-presets{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.ex-presets button{font:inherit;font-size:13.5px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:999px;padding:6px 14px;cursor:pointer;min-height:36px}
+.ex-presets button:hover{border-color:var(--accent);color:var(--accent)}
+.ex-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px 14px;margin-bottom:14px}
+.ex-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--text-2);font-weight:600}
+.ex-form select,.ex-form input{font:inherit;font-size:14px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-width:0;width:100%;min-height:40px}
+.ex-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 12px}
+.ex-btn{font:inherit;font-size:14px;font-weight:600;border:0;border-radius:10px;padding:9px 16px;cursor:pointer;color:#fff;background:#1b7f3b;min-height:40px;display:inline-flex;align-items:center;gap:6px}
+.ex-btn.csv{background:#1d5fb8}.ex-btn.print{background:#52514e}
+.ex-btn:disabled{opacity:.5;cursor:not-allowed}
+.ex-count{font-size:14px;color:var(--text-2)}
+.ex-count b{color:var(--text)}
+.ex-note{font-size:12.5px;color:var(--text-3);margin-top:8px}
+#exTable td,#exTable th{font-size:13.5px}
+#exTable th{cursor:default}
+
 /* ================= ดีไซน์ & แอนิเมชัน ================= */
 :root{--radius:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);--shadow-hover:0 4px 10px rgba(16,24,40,.08),0 14px 34px rgba(16,24,40,.12);
   --hero-a:#1d4ed8;--hero-b:#6d28d9;--ease:cubic-bezier(.22,.8,.26,1)}
@@ -349,6 +366,7 @@ tbody tr.click{transition:background .15s}
       <button role="tab" id="tab-charts" data-tab="charts" aria-selected="true">📊 แนวโน้ม</button>
       <button role="tab" id="tab-list" data-tab="list" aria-selected="false">👥 รายชื่อทั้งหมด <span class="c" id="tabListN"></span></button>
       <button role="tab" id="tab-heat" data-tab="heat" aria-selected="false">🗓️ ตารางสีรายวัน</button>
+      <button role="tab" id="tab-export" data-tab="export" aria-selected="false">📥 ดึงข้อมูล</button>
       <span class="tab-ink" id="tabInk" aria-hidden="true"></span>
     </div>
     <div class="tabpanel" data-panel="charts">
@@ -382,6 +400,47 @@ tbody tr.click{transition:background .15s}
       <h2>ตารางสีรายวัน</h2>
       <div class="desc">ตัวเลขบน = ค่าบน (SYS) · ตัวเลขล่าง = ค่าล่าง (DIA) · สีตามระดับ · ช่องเทา = ไม่มีข้อมูล</div>
       <div class="tbl-wrap"><table class="hm" id="heatmap"></table></div>
+    </div>
+    </div>
+
+    <div class="tabpanel hidden" data-panel="export">
+    <div class="card">
+      <h2>ดึงข้อมูล / ออกรายงาน</h2>
+      <div class="desc">เลือกรูปแบบและเงื่อนไข ดูตัวอย่างด้านล่าง แล้วดาวน์โหลดเป็น Excel / CSV หรือพิมพ์ (บันทึกเป็น PDF ได้)</div>
+      <div class="ex-presets" id="exPresets" role="group" aria-label="รายงานสำเร็จรูป"></div>
+      <div class="ex-form">
+        <label>รูปแบบรายงาน
+          <select id="exType">
+            <option value="person">สรุปรายบุคคล</option>
+            <option value="raw">รายการวัดทั้งหมด (ทุกครั้ง)</option>
+            <option value="group">สรุปตามประเภท / กะ</option>
+            <option value="daily">สรุปรายวัน</option>
+          </select>
+        </label>
+        <label>ประเภท <select id="exGroup"></select></label>
+        <label>กะ <select id="exShift"></select></label>
+        <label>ตั้งแต่วันที่ <input type="date" id="exFrom"></label>
+        <label>ถึงวันที่ <input type="date" id="exTo"></label>
+        <label id="exPeriodWrap">ช่วงเวลา
+          <select id="exPeriod"><option value="ALL">ทั้งหมด</option><option value="เช้า">เช้า</option><option value="บ่าย">บ่าย</option></select>
+        </label>
+        <label id="exLevelWrap">เงื่อนไข <select id="exLevel"></select></label>
+        <label id="exByWrap">จัดกลุ่มตาม
+          <select id="exBy"><option value="group+shift">ประเภท + กะ</option><option value="group">ประเภท</option><option value="shift">กะ</option></select>
+        </label>
+        <label id="exPersonWrap">พนักงาน
+          <input id="exPerson" list="exPeople" placeholder="ทุกคน (พิมพ์ชื่อหรือทะเบียน)" autocomplete="off">
+          <datalist id="exPeople"></datalist>
+        </label>
+      </div>
+      <div class="ex-actions">
+        <button type="button" class="ex-btn" id="exXlsx">⬇ Excel (.xlsx)</button>
+        <button type="button" class="ex-btn csv" id="exCsv">⬇ CSV</button>
+        <button type="button" class="ex-btn print" id="exPrint">🖨 พิมพ์ / PDF</button>
+        <span class="ex-count" id="exCount" role="status" aria-live="polite"></span>
+      </div>
+      <div class="tbl-wrap" style="max-height:520px;overflow:auto" tabindex="0" role="region" aria-label="ตัวอย่างรายงาน (เลื่อนดูได้)"><table id="exTable"></table></div>
+      <div class="ex-note" id="exNote"></div>
     </div>
     </div>
   </section>
@@ -686,6 +745,7 @@ function renderOverview() {
 
   renderTable(ds);
   renderHeatmap(ds);
+  if (tab === 'export' && EX.inited) exBuild();
 }
 
 function lineDs(label, data, color, extra) {
@@ -967,6 +1027,188 @@ function scrollHeatToLatest() {
   requestAnimationFrame(() => { w.scrollLeft = w.scrollWidth; });
 }
 
+// ================= ดึงข้อมูล / ออกรายงาน =================
+// สร้างตารางตามเงื่อนไข → แสดงตัวอย่าง → ส่งออก Excel (SheetJS โหลดเมื่อกดเท่านั้น) / CSV / พิมพ์
+const EX = { inited: false, last: null };
+const exVal = id => $(id).value;
+function exInit() {
+  if (EX.inited) return;
+  EX.inited = true;
+  const opt = (v, t) => `<option value="${esc(v)}">${esc(t)}</option>`;
+  $('exGroup').innerHTML = opt('ALL', 'ทั้งหมด') + DATA.groups.map(g => opt(g, g)).join('');
+  $('exShift').innerHTML = opt('ALL', 'ทั้งหมด') + DATA.shifts.map(v => opt(v, v === '-' ? 'ไม่ระบุ' : 'กะ ' + v)).join('');
+  const d0 = DATA.dates[0], d1 = DATA.dates[DATA.dates.length - 1];
+  ['exFrom', 'exTo'].forEach(id => { $(id).min = d0; $(id).max = d1; });
+  $('exFrom').value = d0; $('exTo').value = d1;
+  $('exGroup').value = group; $('exShift').value = DATA.shifts.includes(shift) ? shift : 'ALL';
+  $('exPeople').innerHTML = DATA.drivers.slice().sort((a, b) => a.name.localeCompare(b.name, 'th'))
+    .map(d => `<option value="${esc(d.name)} (${esc(tag(d))})"></option>`).join('');
+  const presets = [
+    ['👤 สรุปรายบุคคล TPT', { type: 'person', group: 'TPT' }],
+    ['👤 สรุปรายบุคคล Forklift', { type: 'person', group: 'Forklift' }],
+    ['🔁 สรุปรายกะ (ทุกประเภท)', { type: 'group', by: 'group+shift', group: 'ALL' }],
+    ['⚠️ เฉพาะครั้งที่เกินเกณฑ์', { type: 'raw', level: 'over', group: 'ALL' }],
+    ['⛔ พบแพทย์ / งดขับ', { type: 'raw', level: 'severe', group: 'ALL' }],
+    ['📈 คนที่ค่าเฉลี่ยเกินเกณฑ์', { type: 'person', level: 'avgOver', group: 'ALL' }],
+    ['📅 สรุปรายวัน', { type: 'daily', group: 'ALL' }],
+  ].filter(([, p]) => p.group === 'ALL' || DATA.groups.includes(p.group));
+  $('exPresets').innerHTML = presets.map(([t], i) => `<button type="button" data-i="${i}">${esc(t)}</button>`).join('');
+  $('exPresets').querySelectorAll('button').forEach(b => b.onclick = () => {
+    const p = presets[+b.dataset.i][1];
+    $('exType').value = p.type; $('exGroup').value = p.group || 'ALL'; $('exShift').value = 'ALL'; $('exPerson').value = '';
+    $('exPeriod').value = 'ALL'; $('exFrom').value = d0; $('exTo').value = d1;
+    exSyncControls(); if (p.level) $('exLevel').value = p.level; if (p.by) $('exBy').value = p.by;
+    exBuild();
+  });
+  ['exType'].forEach(id => $(id).addEventListener('change', () => { exSyncControls(); exBuild(); }));
+  ['exGroup', 'exShift', 'exFrom', 'exTo', 'exPeriod', 'exLevel', 'exBy'].forEach(id => $(id).addEventListener('change', exBuild));
+  $('exPerson').addEventListener('input', exBuild);
+  $('exXlsx').onclick = exXlsx; $('exCsv').onclick = exCsv; $('exPrint').onclick = exPrint;
+  exSyncControls();
+}
+// เงื่อนไขที่ใช้ได้ต่างกันตามรูปแบบรายงาน
+function exSyncControls() {
+  const t = exVal('exType');
+  const lv = { raw: [['all', 'ทุกรายการ'], ['over', 'เฉพาะที่เกินเกณฑ์ (≥140/90)'], ['severe', 'เฉพาะ พบแพทย์ / งดขับ (≥160/100)'], ['low', 'เฉพาะความดันต่ำ']],
+               person: [['all', 'ทุกคน'], ['avgOver', 'เฉพาะคนที่ค่าเฉลี่ยเกินเกณฑ์'], ['everOver', 'เฉพาะคนที่เคยเกินเกณฑ์']] }[t];
+  $('exLevelWrap').classList.toggle('hidden', !lv);
+  if (lv) $('exLevel').innerHTML = lv.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  $('exByWrap').classList.toggle('hidden', t !== 'group');
+  $('exPersonWrap').classList.toggle('hidden', t === 'group' || t === 'daily');
+  $('exPeriodWrap').classList.toggle('hidden', !DATA.drivers.some(d => d.hasPeriods));
+}
+function exOpen() { exInit(); exBuild(); }
+
+// ---- คัดคน + รายการวัดตามเงื่อนไข
+function exSelect() {
+  const g = exVal('exGroup'), sh = exVal('exShift'), from = exVal('exFrom') || '0000', to = exVal('exTo') || '9999', per = exVal('exPeriod');
+  const q = norm((exVal('exPerson') || '').replace(/\s*\(.*\)\s*$/, ''));
+  const people = DATA.drivers.filter(d => (g === 'ALL' || d.group === g) && (sh === 'ALL' || d.shift === sh) && (!q || $('exPersonWrap').classList.contains('hidden') || matches(d, q)));
+  const inRange = r => r.date >= from && r.date <= to && (per === 'ALL' || !r.period || r.period === per);
+  return { people, inRange, from, to };
+}
+const r1 = v => v == null ? '' : Math.round(v * 10) / 10;
+const pct = (a, b) => b ? Math.round(a / b * 1000) / 10 : 0;
+function exBuild() {
+  if (!DATA) return;
+  const t = exVal('exType'), { people, inRange, from, to } = exSelect(), lvl = $('exLevelWrap').classList.contains('hidden') ? 'all' : exVal('exLevel');
+  let head = [], rows = [], title = '';
+  if (t === 'raw') {
+    title = 'รายการวัดทั้งหมด';
+    head = ['วันที่', 'ช่วงเวลา', 'ชื่อ – สกุล', 'ประเภท', 'ทะเบียน', 'กะ', 'บน (SYS)', 'ล่าง (DIA)', 'ชีพจร', 'ระดับ', 'วิธีปฏิบัติ'];
+    const keep = r => lvl === 'all' || (lvl === 'over' && LV[r.st].over) || (lvl === 'severe' && (r.st === 'l5' || r.st === 'l6')) || (lvl === 'low' && r.st === 'low');
+    people.forEach(d => d.all.filter(inRange).filter(keep).forEach(r => rows.push([r.date, r.period || '', d.name, d.group, d.plate || '', d.shift, r.sys ?? '', r.dia ?? '', r.pulse ?? '', LV[r.st].label, LV[r.st].act])));
+    rows.sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]) || a[5].localeCompare(b[5]) || a[2].localeCompare(b[2], 'th') || a[1].localeCompare(b[1]));
+  } else if (t === 'person') {
+    title = 'สรุปรายบุคคล';
+    head = ['ชื่อ – สกุล', 'ประเภท', 'ทะเบียน', 'กะ', 'จำนวนครั้ง', 'เฉลี่ยบน', 'เฉลี่ยล่าง', 'ระดับเฉลี่ย', 'สูงสุดบน', 'สูงสุดล่าง', 'ชีพจรเฉลี่ย', 'ครั้งที่เกินเกณฑ์', '% เกินเกณฑ์', 'สูงปานกลางขึ้นไป (ครั้ง)', 'ผลวันล่าสุด', 'วันที่ล่าสุด'];
+    people.forEach(d => {
+      const rs = d.all.filter(inRange); if (!rs.length) return;
+      const S = rs.map(r => r.sys).filter(Boolean), D = rs.map(r => r.dia).filter(Boolean), P = rs.map(r => r.pulse).filter(Boolean);
+      const aS = avg(S), aD = avg(D), st = statusOf(aS, aD), nOver = rs.filter(r => LV[r.st].over).length;
+      if (lvl === 'avgOver' && !LV[st].over) return;
+      if (lvl === 'everOver' && !nOver) return;
+      const days = d.readings.filter(inRange), last = days[days.length - 1];
+      rows.push([d.name, d.group, d.plate || '', d.shift, rs.length, r1(aS), r1(aD), LV[st].label, S.length ? Math.max(...S) : '', D.length ? Math.max(...D) : '', r1(avg(P)),
+        nOver, pct(nOver, rs.length), rs.filter(r => r.st === 'l5' || r.st === 'l6').length, last ? `${last.sys ?? '–'}/${last.dia ?? '–'} ${LV[last.st].label}` : '', last ? last.date : '']);
+    });
+    rows.sort((a, b) => b[12] - a[12] || b[5] - a[5]);
+  } else if (t === 'group') {
+    const by = exVal('exBy');
+    title = 'สรุปตาม' + { 'group+shift': 'ประเภท + กะ', group: 'ประเภท', shift: 'กะ' }[by];
+    head = [...(by !== 'shift' ? ['ประเภท'] : []), ...(by !== 'group' ? ['กะ'] : []), 'จำนวนคน', 'คนที่มีผลวัด', 'จำนวนครั้ง', 'เฉลี่ยบน', 'เฉลี่ยล่าง', 'ครั้งที่เกินเกณฑ์', '% เกินเกณฑ์', 'สูงปานกลางขึ้นไป (ครั้ง)', 'คนที่ค่าเฉลี่ยเกินเกณฑ์'];
+    const G = new Map();
+    people.forEach(d => {
+      const key = by === 'group' ? [d.group] : by === 'shift' ? [d.shift] : [d.group, d.shift];
+      const k = key.join('|'); if (!G.has(k)) G.set(k, { key, ppl: 0, measured: 0, rs: [], avgOver: 0 });
+      const e = G.get(k), rs = d.all.filter(inRange); e.ppl++;
+      if (rs.length) { e.measured++; e.rs.push(...rs); if (LV[statusOf(avg(rs.map(r => r.sys).filter(Boolean)), avg(rs.map(r => r.dia).filter(Boolean)))].over) e.avgOver++; }
+    });
+    [...G.values()].sort((a, b) => a.key.join().localeCompare(b.key.join())).forEach(e => {
+      const nOver = e.rs.filter(r => LV[r.st].over).length;
+      rows.push([...e.key, e.ppl, e.measured, e.rs.length, r1(avg(e.rs.map(r => r.sys).filter(Boolean))), r1(avg(e.rs.map(r => r.dia).filter(Boolean))), nOver, pct(nOver, e.rs.length), e.rs.filter(r => r.st === 'l5' || r.st === 'l6').length, e.avgOver]);
+    });
+    if (rows.length > 1) { // แถวรวม
+      const all = [...G.values()].flatMap(e => e.rs), nOver = all.filter(r => LV[r.st].over).length;
+      rows.push([...head.slice(0, by === 'group+shift' ? 2 : 1).map((_, i) => i === 0 ? 'รวม' : ''), [...G.values()].reduce((a, e) => a + e.ppl, 0), [...G.values()].reduce((a, e) => a + e.measured, 0), all.length,
+        r1(avg(all.map(r => r.sys).filter(Boolean))), r1(avg(all.map(r => r.dia).filter(Boolean))), nOver, pct(nOver, all.length), all.filter(r => r.st === 'l5' || r.st === 'l6').length, [...G.values()].reduce((a, e) => a + e.avgOver, 0)]);
+    }
+  } else if (t === 'daily') {
+    title = 'สรุปรายวัน';
+    head = ['วันที่', 'คนที่วัด', 'ขับได้ (คน)', 'ต้องวัดซ้ำ (คน)', 'พบแพทย์ / งดขับ (คน)', 'ความดันต่ำ (คน)', '% เกินเกณฑ์', 'เฉลี่ยบน', 'เฉลี่ยล่าง'];
+    const days = [...new Set(people.flatMap(d => d.readings.filter(inRange).map(r => r.date)))].sort();
+    days.forEach(dt => {
+      const w = people.map(d => d.readings.find(r => r.date === dt && inRange(r))).filter(Boolean);   // ค่าที่แย่สุดของวันต่อคน
+      const over = w.filter(r => LV[r.st].over).length;
+      rows.push([dt, w.length, w.filter(r => !LV[r.st].over && r.st !== 'low').length, w.filter(r => r.st === 'l4').length, w.filter(r => r.st === 'l5' || r.st === 'l6').length,
+        w.filter(r => r.st === 'low').length, pct(over, w.length), r1(avg(w.map(r => r.sys).filter(Boolean))), r1(avg(w.map(r => r.dia).filter(Boolean)))]);
+    });
+  }
+  const cond = [`ประเภท: ${exVal('exGroup') === 'ALL' ? 'ทั้งหมด' : exVal('exGroup')}`, `กะ: ${exVal('exShift') === 'ALL' ? 'ทั้งหมด' : exVal('exShift')}`, `ช่วง: ${dLong(from)} – ${dLong(to)}`]
+    .concat(!$('exPeriodWrap').classList.contains('hidden') && exVal('exPeriod') !== 'ALL' ? [`ช่วงเวลา: ${exVal('exPeriod')}`] : [])
+    .concat(!$('exLevelWrap').classList.contains('hidden') ? [`เงื่อนไข: ${$('exLevel').selectedOptions[0].textContent}`] : [])
+    .concat(!$('exPersonWrap').classList.contains('hidden') && exVal('exPerson') ? [`พนักงาน: ${exVal('exPerson')}`] : []);
+  EX.last = { title, head, rows, cond, from, to, type: t };
+  const MAXP = 300;
+  $('exTable').innerHTML = `<thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
+    (rows.length ? rows.slice(0, MAXP).map(r => `<tr>${r.map((c, i) => `<td class="${typeof c === 'number' ? 'num' : ''}">${t === 'daily' && i === 0 ? dLong(c) : t === 'raw' && i === 0 ? dShort(c) : esc(c)}</td>`).join('')}</tr>`).join('')
+      : `<tr><td colspan="${head.length}" class="empty">ไม่มีข้อมูลตามเงื่อนไขนี้</td></tr>`) + '</tbody>';
+  $('exCount').innerHTML = `<b>${title}</b> · ${rows.length.toLocaleString('th-TH')} แถว`;
+  $('exNote').textContent = (rows.length > MAXP ? `แสดงตัวอย่าง ${MAXP} แถวแรก — ไฟล์ที่ดาวน์โหลดมีครบ ${rows.length.toLocaleString('th-TH')} แถว · ` : '') + 'เงื่อนไข: ' + cond.join(' · ');
+  ['exXlsx', 'exCsv', 'exPrint'].forEach(id => $(id).disabled = !rows.length);
+}
+// ชื่อไฟล์เป็นภาษาอังกฤษ: บางเบราว์เซอร์ตัดตัวอักษรไทยในชื่อไฟล์ดาวน์โหลดทิ้ง (เหลือแค่ "download")
+const exFileName = ext => { const L = EX.last, g = exVal('exGroup'), sh = exVal('exShift');
+  const kind = { raw: 'readings', person: 'person-summary', group: 'group-summary', daily: 'daily-summary' }[L.type] || 'report';
+  const part = v => String(v).replace(/[^A-Za-z0-9-]+/g, '');
+  return ['BP', kind, g !== 'ALL' ? part(g) : '', sh !== 'ALL' ? 'shift' + part(sh) : '', L.from, 'to', L.to].filter(Boolean).join('_') + '.' + ext; };
+function exDownload(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function exCsv() {
+  if (!EX.last) return;
+  const q = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const csv = [EX.last.head, ...EX.last.rows].map(r => r.map(q).join(',')).join('\r\n');
+  exDownload(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), exFileName('csv'));   // BOM ให้ Excel อ่านภาษาไทยถูก
+}
+let xlsxLoading = null;
+function loadXlsx() {
+  if (window.XLSX) return Promise.resolve();
+  return xlsxLoading || (xlsxLoading = new Promise((ok, bad) => { const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = ok; sc.onerror = () => { xlsxLoading = null; bad(new Error('load')); }; document.head.appendChild(sc); }));
+}
+function exXlsx() {
+  if (!EX.last) return;
+  const btn = $('exXlsx'), label = btn.textContent; btn.disabled = true; btn.textContent = '⏳ กำลังสร้างไฟล์…';
+  loadXlsx().then(() => {
+    const L = EX.last, wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([L.head, ...L.rows]);
+    ws['!cols'] = L.head.map((h, i) => ({ wch: Math.min(48, Math.max(h.length + 2, ...L.rows.slice(0, 300).map(r => String(r[i] ?? '').length + 2))) }));
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: L.rows.length, c: L.head.length - 1 } }) };
+    XLSX.utils.book_append_sheet(wb, ws, L.title.slice(0, 31));
+    const info = XLSX.utils.aoa_to_sheet([['รายงาน', L.title], ...L.cond.map(c => c.split(': ')), ['จำนวนแถว', L.rows.length], ['สร้างเมื่อ', new Date().toLocaleString('th-TH')],
+      ['แหล่งข้อมูล', DATA.sources.join(', ')], ['เกณฑ์', 'รพ.ศิริราชปิยมหาราชการุณย์ / WHO · เกินเกณฑ์ขับ = ≥140/90'], ['Made By', 'Suwarot Thanabat · L150081']]);
+    info['!cols'] = [{ wch: 14 }, { wch: 60 }];
+    XLSX.utils.book_append_sheet(wb, info, 'เงื่อนไข');
+    XLSX.writeFile(wb, exFileName('xlsx'));
+  }).catch(() => alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ตรวจอินเทอร์เน็ต) — ลองใช้ปุ่ม CSV แทน'))
+    .finally(() => { btn.disabled = false; btn.textContent = label; });
+}
+function exPrint() {
+  if (!EX.last) return;
+  const L = EX.last, w = window.open('', '_blank');
+  if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาต pop-up แล้วลองอีกครั้ง'); return; }
+  w.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${esc(L.title)}</title><style>
+    body{font-family:"IBM Plex Sans Thai",Tahoma,sans-serif;margin:18px;color:#111}h1{font-size:18px;margin:0 0 4px}.m{font-size:12px;color:#444;margin-bottom:10px}
+    table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left}th{background:#eee}td.n{text-align:right}
+    .f{margin-top:10px;font-size:11px;color:#555}@page{size:A4 landscape;margin:12mm}</style></head><body>
+    <h1>${esc(L.title)} — ผลวัดความดัน พนักงานขับรถ</h1><div class="m">${esc(L.cond.join(' · '))} · ${L.rows.length} แถว · พิมพ์เมื่อ ${esc(new Date().toLocaleString('th-TH'))}</div>
+    <table><thead><tr>${L.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${L.rows.map(r => `<tr>${r.map(c => `<td class="${typeof c === 'number' ? 'n' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    <div class="f">Made By Suwarot Thanabat · L150081</div><script>window.onload=()=>{window.print()}<\/script></body></html>`);
+  w.document.close();
+}
+
 // ================= แอนิเมชัน =================
 const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 // เล่นแอนิเมชันเข้าเฉพาะตอนเปิดหน้า/สลับแท็บ: ใส่ class .boot ชั่วคราว แล้วเอาออก (พิมพ์ค้นหา/กรองจะไม่กระพริบ)
@@ -1004,12 +1246,13 @@ else if (window.Chart) { Chart.defaults.animation.duration = 800; Chart.defaults
 let tab = 'charts';
 try { tab = localStorage.getItem('bp-tab') || 'charts'; } catch (e) {}
 function showTab(t, focus) {
-  if (!['charts', 'list', 'heat'].includes(t)) t = 'charts';
+  if (!['charts', 'list', 'heat', 'export'].includes(t)) t = 'charts';
   tab = t;
   try { localStorage.setItem('bp-tab', t); } catch (e) {}
   document.querySelectorAll('#tabs [role="tab"]').forEach(b => { const on = b.dataset.tab === t; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
   document.querySelectorAll('.tabpanel').forEach(p => p.classList.toggle('hidden', p.dataset.panel !== t));
   if (t === 'heat') scrollHeatToLatest();
+  if (t === 'export' && DATA) exOpen();
   moveTabInk();
   if (DATA) playIn(document.querySelector(`.tabpanel[data-panel="${t}"]`), 1400);
 }
