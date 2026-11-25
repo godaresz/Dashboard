@@ -239,6 +239,21 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
 .ex-count{font-size:14px;color:var(--text-2)}
 .ex-count b{color:var(--text)}
 .ex-note{font-size:12.5px;color:var(--text-3);margin-top:8px}
+.ex-date{display:flex;gap:6px;position:relative}
+.ex-date input[type=text]{flex:1}
+.ex-date input[aria-invalid=true]{border-color:#c62828;box-shadow:0 0 0 2px rgba(198,40,40,.18)}
+.ex-cal{font:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;min-width:40px;min-height:40px;cursor:pointer}
+.ex-cal:hover{background:var(--surface-2,#f1f1ef)}
+.ex-native{position:absolute;right:0;bottom:0;width:40px;height:40px;opacity:0;pointer-events:none;border:0;padding:0}
+.ex-src{margin-top:18px;padding:14px 16px;border:1px dashed var(--border);border-radius:12px;background:var(--surface)}
+.ex-src h3{margin:0 0 4px;font-size:15px}
+.ex-src .path{font-size:12.5px;color:var(--text-3);word-break:break-all;margin-bottom:10px}
+.ex-src ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ex-src li{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.ex-src .fname{font-weight:600;word-break:break-all}
+.ex-src .fsize{font-size:12.5px;color:var(--text-3)}
+a.ex-btn{text-decoration:none}
+.ex-btn.src{background:#0f6e5c}
 #exTable td,#exTable th{font-size:13.5px}
 #exTable th{cursor:default}
 
@@ -419,8 +434,12 @@ tbody tr.click{transition:background .15s}
         </label>
         <label>ประเภท <select id="exGroup"></select></label>
         <label>กะ <select id="exShift"></select></label>
-        <label>ตั้งแต่วันที่ <input type="date" id="exFrom"></label>
-        <label>ถึงวันที่ <input type="date" id="exTo"></label>
+        <label>ตั้งแต่วันที่
+          <span class="ex-date"><input type="text" id="exFrom" inputmode="numeric" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" aria-describedby="exDateHint"><button type="button" class="ex-cal" data-for="exFrom" aria-label="ตั้งแต่วันที่ — เลือกจากปฏิทิน">📅</button><input type="date" class="ex-native" data-for="exFrom" tabindex="-1" aria-hidden="true"></span>
+        </label>
+        <label>ถึงวันที่
+          <span class="ex-date"><input type="text" id="exTo" inputmode="numeric" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" aria-describedby="exDateHint"><button type="button" class="ex-cal" data-for="exTo" aria-label="ถึงวันที่ — เลือกจากปฏิทิน">📅</button><input type="date" class="ex-native" data-for="exTo" tabindex="-1" aria-hidden="true"></span>
+        </label>
         <label id="exPeriodWrap">ช่วงเวลา
           <select id="exPeriod"><option value="ALL">ทั้งหมด</option><option value="เช้า">เช้า</option><option value="บ่าย">บ่าย</option></select>
         </label>
@@ -433,6 +452,7 @@ tbody tr.click{transition:background .15s}
           <datalist id="exPeople"></datalist>
         </label>
       </div>
+      <div class="ex-note" id="exDateHint">วันที่ใช้รูปแบบ วัน/เดือน/ปี ค.ศ. (DD/MM/YYYY) เช่น 05/11/2026 — พิมพ์เองหรือกด 📅 เลือกจากปฏิทิน</div>
       <div class="ex-actions">
         <button type="button" class="ex-btn" id="exXlsx">⬇ Excel (.xlsx)</button>
         <button type="button" class="ex-btn csv" id="exCsv">⬇ CSV</button>
@@ -441,6 +461,11 @@ tbody tr.click{transition:background .15s}
       </div>
       <div class="tbl-wrap" style="max-height:520px;overflow:auto" tabindex="0" role="region" aria-label="ตัวอย่างรายงาน (เลื่อนดูได้)"><table id="exTable"></table></div>
       <div class="ex-note" id="exNote"></div>
+      <div class="ex-src" id="exSrc">
+        <h3>📂 ไฟล์ต้นฉบับ (Excel ที่ใช้ทำ Dashboard)</h3>
+        <div class="path">ดึงมาจาก \\la26032\scan\1.Data Cross Dock Center\31.ลงข้อมูลวัดความดัน พขร. TPT และ Forklift</div>
+        <ul id="exSrcList"></ul>
+      </div>
     </div>
     </div>
   </section>
@@ -1031,6 +1056,27 @@ function scrollHeatToLatest() {
 // สร้างตารางตามเงื่อนไข → แสดงตัวอย่าง → ส่งออก Excel (SheetJS โหลดเมื่อกดเท่านั้น) / CSV / พิมพ์
 const EX = { inited: false, last: null };
 const exVal = id => $(id).value;
+// วันที่ในหน้านี้เป็น DD/MM/YYYY เสมอ (ช่อง type=date แสดงตามภาษาเบราว์เซอร์ เช่น MM/DD/YYYY จึงใช้ช่องข้อความแทน)
+const dmy = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '';
+function exDate(id) {   // ข้อความ DD/MM/YYYY → ISO หรือ '' ถ้าว่าง/ไม่ถูกต้อง (รับปี พ.ศ. ด้วย)
+  const m = $(id).value.trim().match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/); if (!m) return '';
+  let [, d, mo, y] = m.map(Number); if (y > 2400) y -= 543;
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d) return '';
+  return t.toISOString().slice(0, 10);
+}
+const exSetDate = (id, iso) => { $(id).value = dmy(iso); $(id).setAttribute('aria-invalid', 'false'); };
+// ชื่อไฟล์ที่บันทึกเป็นตัวอังกฤษ (เหตุผลเดียวกับ exFileName) — ชื่อเดิมภาษาไทยแสดงไว้ข้างปุ่ม
+const srcName = n => { const base = n.replace(/\.[^.]+$/, ''), ext = (n.match(/\.[^.]+$/) || ['.xlsx'])[0];
+  const asc = base.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return ['BP_source', asc, DATA.dates[DATA.dates.length - 1]].filter(Boolean).join('_') + ext; };
+function exRenderSources() {
+  const files = DATA.sourceFiles || [];
+  const size = n => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  $('exSrcList').innerHTML = files.length ? files.map(f => `<li><a class="ex-btn src" href="source/${encodeURIComponent(f.name)}" download="${esc(srcName(f.name))}">⬇ ดาวน์โหลด</a>
+    <span class="fname">📗 ${esc(f.name)}</span><span class="fsize">${size(f.size)} · ข้อมูล ณ ${esc(dmy(DATA.dates[DATA.dates.length - 1]))}</span></li>`).join('')
+    : '<li class="fsize">ยังไม่มีไฟล์ให้ดาวน์โหลด (จะมีหลังระบบอัปเดตข้อมูลครั้งถัดไป)</li>';
+}
 function exInit() {
   if (EX.inited) return;
   EX.inited = true;
@@ -1038,8 +1084,18 @@ function exInit() {
   $('exGroup').innerHTML = opt('ALL', 'ทั้งหมด') + DATA.groups.map(g => opt(g, g)).join('');
   $('exShift').innerHTML = opt('ALL', 'ทั้งหมด') + DATA.shifts.map(v => opt(v, v === '-' ? 'ไม่ระบุ' : 'กะ ' + v)).join('');
   const d0 = DATA.dates[0], d1 = DATA.dates[DATA.dates.length - 1];
-  ['exFrom', 'exTo'].forEach(id => { $(id).min = d0; $(id).max = d1; });
-  $('exFrom').value = d0; $('exTo').value = d1;
+  ['exFrom', 'exTo'].forEach(id => { const n = document.querySelector(`.ex-native[data-for="${id}"]`); n.min = d0; n.max = d1; });
+  exSetDate('exFrom', d0); exSetDate('exTo', d1);
+  document.querySelectorAll('.ex-cal').forEach(b => b.onclick = () => {
+    const n = document.querySelector(`.ex-native[data-for="${b.dataset.for}"]`); n.value = exDate(b.dataset.for) || '';
+    try { n.showPicker(); } catch (e) { n.focus(); n.click(); }
+  });
+  document.querySelectorAll('.ex-native').forEach(n => n.addEventListener('change', () => { if (n.value) { exSetDate(n.dataset.for, n.value); exBuild(); } }));
+  ['exFrom', 'exTo'].forEach(id => {
+    $(id).addEventListener('input', () => { const el = $(id), v = el.value.trim(); if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v) || !v) exBuild(); else el.setAttribute('aria-invalid', 'false'); });
+    $(id).addEventListener('blur', () => { const iso = exDate(id); if (iso) exSetDate(id, iso); exBuild(); });
+  });
+  exRenderSources();
   $('exGroup').value = group; $('exShift').value = DATA.shifts.includes(shift) ? shift : 'ALL';
   $('exPeople').innerHTML = DATA.drivers.slice().sort((a, b) => a.name.localeCompare(b.name, 'th'))
     .map(d => `<option value="${esc(d.name)} (${esc(tag(d))})"></option>`).join('');
@@ -1056,12 +1112,12 @@ function exInit() {
   $('exPresets').querySelectorAll('button').forEach(b => b.onclick = () => {
     const p = presets[+b.dataset.i][1];
     $('exType').value = p.type; $('exGroup').value = p.group || 'ALL'; $('exShift').value = 'ALL'; $('exPerson').value = '';
-    $('exPeriod').value = 'ALL'; $('exFrom').value = d0; $('exTo').value = d1;
+    $('exPeriod').value = 'ALL'; exSetDate('exFrom', d0); exSetDate('exTo', d1);
     exSyncControls(); if (p.level) $('exLevel').value = p.level; if (p.by) $('exBy').value = p.by;
     exBuild();
   });
   ['exType'].forEach(id => $(id).addEventListener('change', () => { exSyncControls(); exBuild(); }));
-  ['exGroup', 'exShift', 'exFrom', 'exTo', 'exPeriod', 'exLevel', 'exBy'].forEach(id => $(id).addEventListener('change', exBuild));
+  ['exGroup', 'exShift', 'exPeriod', 'exLevel', 'exBy'].forEach(id => $(id).addEventListener('change', exBuild));
   $('exPerson').addEventListener('input', exBuild);
   $('exXlsx').onclick = exXlsx; $('exCsv').onclick = exCsv; $('exPrint').onclick = exPrint;
   exSyncControls();
@@ -1081,7 +1137,7 @@ function exOpen() { exInit(); exBuild(); }
 
 // ---- คัดคน + รายการวัดตามเงื่อนไข
 function exSelect() {
-  const g = exVal('exGroup'), sh = exVal('exShift'), from = exVal('exFrom') || '0000', to = exVal('exTo') || '9999', per = exVal('exPeriod');
+  const g = exVal('exGroup'), sh = exVal('exShift'), from = exDate('exFrom') || DATA.dates[0], to = exDate('exTo') || DATA.dates[DATA.dates.length - 1], per = exVal('exPeriod');
   const q = norm((exVal('exPerson') || '').replace(/\s*\(.*\)\s*$/, ''));
   const people = DATA.drivers.filter(d => (g === 'ALL' || d.group === g) && (sh === 'ALL' || d.shift === sh) && (!q || $('exPersonWrap').classList.contains('hidden') || matches(d, q)));
   const inRange = r => r.date >= from && r.date <= to && (per === 'ALL' || !r.period || r.period === per);
@@ -1091,6 +1147,7 @@ const r1 = v => v == null ? '' : Math.round(v * 10) / 10;
 const pct = (a, b) => b ? Math.round(a / b * 1000) / 10 : 0;
 function exBuild() {
   if (!DATA) return;
+  ['exFrom', 'exTo'].forEach(id => $(id).setAttribute('aria-invalid', String(!!$(id).value.trim() && !exDate(id))));
   const t = exVal('exType'), { people, inRange, from, to } = exSelect(), lvl = $('exLevelWrap').classList.contains('hidden') ? 'all' : exVal('exLevel');
   let head = [], rows = [], title = '';
   if (t === 'raw') {
@@ -1144,14 +1201,15 @@ function exBuild() {
         w.filter(r => r.st === 'low').length, pct(over, w.length), r1(avg(w.map(r => r.sys).filter(Boolean))), r1(avg(w.map(r => r.dia).filter(Boolean)))]);
     });
   }
-  const cond = [`ประเภท: ${exVal('exGroup') === 'ALL' ? 'ทั้งหมด' : exVal('exGroup')}`, `กะ: ${exVal('exShift') === 'ALL' ? 'ทั้งหมด' : exVal('exShift')}`, `ช่วง: ${dLong(from)} – ${dLong(to)}`]
+  const cond = [`ประเภท: ${exVal('exGroup') === 'ALL' ? 'ทั้งหมด' : exVal('exGroup')}`, `กะ: ${exVal('exShift') === 'ALL' ? 'ทั้งหมด' : exVal('exShift')}`, `ช่วง: ${dmy(from)} – ${dmy(to)}`]
     .concat(!$('exPeriodWrap').classList.contains('hidden') && exVal('exPeriod') !== 'ALL' ? [`ช่วงเวลา: ${exVal('exPeriod')}`] : [])
     .concat(!$('exLevelWrap').classList.contains('hidden') ? [`เงื่อนไข: ${$('exLevel').selectedOptions[0].textContent}`] : [])
     .concat(!$('exPersonWrap').classList.contains('hidden') && exVal('exPerson') ? [`พนักงาน: ${exVal('exPerson')}`] : []);
-  EX.last = { title, head, rows, cond, from, to, type: t };
+  const dcols = { raw: [0], person: [15], daily: [0] }[t] || [];   // คอลัมน์วันที่ (เก็บเป็น ISO ไว้เรียง แสดง/ส่งออกเป็น DD/MM/YYYY)
+  EX.last = { title, head, rows, cond, from, to, type: t, dcols };
   const MAXP = 300;
   $('exTable').innerHTML = `<thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
-    (rows.length ? rows.slice(0, MAXP).map(r => `<tr>${r.map((c, i) => `<td class="${typeof c === 'number' ? 'num' : ''}">${t === 'daily' && i === 0 ? dLong(c) : t === 'raw' && i === 0 ? dShort(c) : esc(c)}</td>`).join('')}</tr>`).join('')
+    (rows.length ? rows.slice(0, MAXP).map(r => `<tr>${r.map((c, i) => `<td class="${typeof c === 'number' ? 'num' : ''}">${dcols.includes(i) ? dmy(c) : esc(c)}</td>`).join('')}</tr>`).join('')
       : `<tr><td colspan="${head.length}" class="empty">ไม่มีข้อมูลตามเงื่อนไขนี้</td></tr>`) + '</tbody>';
   $('exCount').innerHTML = `<b>${title}</b> · ${rows.length.toLocaleString('th-TH')} แถว`;
   $('exNote').textContent = (rows.length > MAXP ? `แสดงตัวอย่าง ${MAXP} แถวแรก — ไฟล์ที่ดาวน์โหลดมีครบ ${rows.length.toLocaleString('th-TH')} แถว · ` : '') + 'เงื่อนไข: ' + cond.join(' · ');
@@ -1166,10 +1224,11 @@ function exDownload(blob, name) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
+const exRowsText = () => EX.last.rows.map(r => r.map((c, i) => EX.last.dcols.includes(i) ? dmy(c) : c));
 function exCsv() {
   if (!EX.last) return;
   const q = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const csv = [EX.last.head, ...EX.last.rows].map(r => r.map(q).join(',')).join('\r\n');
+  const csv = [EX.last.head, ...exRowsText()].map(r => r.map(q).join(',')).join('\r\n');
   exDownload(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), exFileName('csv'));   // BOM ให้ Excel อ่านภาษาไทยถูก
 }
 let xlsxLoading = null;
@@ -1183,7 +1242,8 @@ function exXlsx() {
   const btn = $('exXlsx'), label = btn.textContent; btn.disabled = true; btn.textContent = '⏳ กำลังสร้างไฟล์…';
   loadXlsx().then(() => {
     const L = EX.last, wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([L.head, ...L.rows]);
+    const rows = L.rows.map(r => r.map((c, i) => L.dcols.includes(i) && c ? new Date(+c.slice(0, 4), +c.slice(5, 7) - 1, +c.slice(8, 10)) : c));
+    const ws = XLSX.utils.aoa_to_sheet([L.head, ...rows], { dateNF: 'dd/mm/yyyy' });   // เป็นวันที่จริงใน Excel (เรียง/กรองได้) แสดง DD/MM/YYYY
     ws['!cols'] = L.head.map((h, i) => ({ wch: Math.min(48, Math.max(h.length + 2, ...L.rows.slice(0, 300).map(r => String(r[i] ?? '').length + 2))) }));
     ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: L.rows.length, c: L.head.length - 1 } }) };
     XLSX.utils.book_append_sheet(wb, ws, L.title.slice(0, 31));
@@ -1204,7 +1264,7 @@ function exPrint() {
     table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left}th{background:#eee}td.n{text-align:right}
     .f{margin-top:10px;font-size:11px;color:#555}@page{size:A4 landscape;margin:12mm}</style></head><body>
     <h1>${esc(L.title)} — ผลวัดความดัน พนักงานขับรถ</h1><div class="m">${esc(L.cond.join(' · '))} · ${L.rows.length} แถว · พิมพ์เมื่อ ${esc(new Date().toLocaleString('th-TH'))}</div>
-    <table><thead><tr>${L.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${L.rows.map(r => `<tr>${r.map(c => `<td class="${typeof c === 'number' ? 'n' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    <table><thead><tr>${L.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${exRowsText().map(r => `<tr>${r.map(c => `<td class="${typeof c === 'number' ? 'n' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
     <div class="f">Made By Suwarot Thanabat · L150081</div><script>window.onload=()=>{window.print()}<\/script></body></html>`);
   w.document.close();
 }
