@@ -13,6 +13,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import sys
 from datetime import date, datetime, timezone
 
@@ -227,10 +228,20 @@ def main():
         # อ่านไม่ได้สักรายการ (เช่น รูปแบบไฟล์เปลี่ยน) -> ให้ build ล้ม เว็บจะคงข้อมูลชุดเดิมไว้แทนการขึ้นหน้าว่าง
         sys.exit("ไม่พบข้อมูลการวัดเลย — ตรวจรูปแบบหัวตาราง (ชื่อพนักงานขับรถ / วันที่ / บน-ล่าง-ชีพจร)")
 
+    # สำเนาไฟล์ต้นฉบับขึ้นเว็บด้วย ให้ดาวน์โหลดจากแท็บ "ดึงข้อมูล" ได้ (เฉพาะไฟล์ที่อ่านได้จริง)
+    src_dir = os.path.join(os.path.dirname(OUT), "source")
+    shutil.rmtree(src_dir, ignore_errors=True)
+    os.makedirs(src_dir, exist_ok=True)
+    source_files = []
+    for f in used:
+        shutil.copyfile(f, os.path.join(src_dir, os.path.basename(f)))
+        source_files.append({"name": os.path.basename(f), "size": os.path.getsize(f)})
+
     out = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "build": os.environ.get("BUILD_ID", ""),   # เวอร์ชันโค้ดหน้าเว็บ (ตั้งโดย GitHub Actions)
         "sources": [os.path.basename(f) for f in used],
+        "sourceFiles": source_files,
         "drivers": drivers,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

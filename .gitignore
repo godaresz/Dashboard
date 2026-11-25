@@ -3,3 +3,4 @@ __pycache__/
 .DS_Store
 tools/sync.log
 tools/token.dat
+site/source/
