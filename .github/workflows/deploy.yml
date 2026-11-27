@@ -28,7 +28,7 @@ jobs:
         # เวอร์ชัน = hash ของโค้ดหน้าเว็บ (ไม่ใช่ commit) — เปลี่ยนเฉพาะเมื่อแก้หน้าเว็บ
         # หน้าที่เปิดค้างไว้จะรีโหลดตัวเองเมื่อเวอร์ชันใน data.json ไม่ตรงกับของหน้า
         run: |
-          BUILD_ID=$(cat site/index.html site/firebase-config.js | sha256sum | cut -c1-12)
+          BUILD_ID=$(cat site/index.html site/firebase-config.js site/notes.js | sha256sum | cut -c1-12)
           echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
           sed -i "s/__BUILD_ID__/$BUILD_ID/g" site/index.html
           echo "page version: $BUILD_ID"

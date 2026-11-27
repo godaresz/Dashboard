@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="firebase-config.js"></script>
+<script src="notes.js?v=__BUILD_ID__"></script>
 <style>
 :root{
   color-scheme: light;
@@ -254,6 +255,70 @@ footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
 .ex-src .fsize{font-size:12.5px;color:var(--text-3)}
 a.ex-btn{text-decoration:none}
 .ex-btn.src{background:#0f6e5c}
+/* หมายเหตุ / การติดตาม */
+.nb{display:inline-block;font-size:11.5px;font-weight:600;line-height:1.3;padding:2px 7px;border-radius:999px;background:#e6f0fb;color:#16467f;white-space:nowrap;vertical-align:middle}
+.nb.warn{background:#fdecea;color:#9d1c12}
+.nt-auth{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:6px 0 12px}
+.nt-who{font-size:13px;color:var(--text-2)}
+.nt-msg{flex-basis:100%;font-size:13px;color:var(--text-2);background:var(--surface-2);border-radius:8px;padding:8px 10px}
+.nt-msg code{font-size:12px;user-select:all;word-break:break-all}
+.nt-btn{font:inherit;font-size:14px;font-weight:600;border:0;border-radius:10px;padding:8px 14px;min-height:40px;cursor:pointer;color:#fff;background:#1d5fb8;display:inline-flex;align-items:center;gap:6px}
+.nt-btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.nt-btn:disabled{opacity:.55;cursor:not-allowed}
+.nt-login,.nt-form{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;width:100%}
+.nt-login label,.nt-row label,.nt-textf{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--text-2)}
+.nt-login input,.nt-form input[type=text],.nt-form textarea{font:inherit;font-size:14px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-height:40px}
+.nt-form [aria-invalid=true]{border-color:#c62828}
+.nt-err{flex-basis:100%;color:#b42318;font-size:13px;min-height:1em}
+.nt-kinds{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px;width:100%}
+.nt-kinds legend{font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:6px;padding:0}
+.nt-kopt{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:13.5px;cursor:pointer;background:var(--surface);min-height:36px}
+.nt-kopt:has(input:checked){border-color:var(--accent);background:#e6f0fb;color:#16467f;font-weight:600}
+.nt-row{display:flex;flex-wrap:wrap;gap:10px 12px;width:100%}
+.nt-textf{width:100%}
+.nt-imgf{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%}
+.nt-file{position:relative;overflow:hidden}
+.nt-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.nt-file.disabled{opacity:.5}
+.nt-prev{display:flex;flex-wrap:wrap;gap:8px}
+.nt-pv{position:relative}
+.nt-pv img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block}
+.nt-pv button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:0;background:#b42318;color:#fff;cursor:pointer;font-size:12px}
+.nt-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%}
+.nt-status{font-size:13px;color:var(--text-2)}
+.nt-list{display:flex;flex-direction:column;gap:10px}
+.nt-item{border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.nt-item.warn{border-left-color:#c62828}
+.nt-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.nt-kind{font-weight:700}
+.nt-date{font-size:13px;color:var(--text-2)}
+.nt-appt{font-size:13px;font-weight:600;color:#16467f}
+.nt-appt.warn{color:#b42318}
+.nt-text{margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere}
+.nt-imgs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.nt-thumb{padding:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:zoom-in;background:none;width:96px;height:96px}
+.nt-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.nt-foot{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:8px;font-size:12.5px;color:var(--text-3)}
+.nt-acts{margin-left:auto;display:inline-flex;gap:4px}
+.nt-link{font:inherit;font-size:13px;background:none;border:0;color:var(--accent);cursor:pointer;padding:6px 8px;min-height:32px}
+.nt-link.danger{color:#b42318}
+.nt-empty{font-size:13.5px;color:var(--text-3)}
+.nt-flash{font-size:13.5px;font-weight:600;color:#14532d;background:#dcf5e3;border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.nt-flash.bad{color:#9d1c12;background:#fdecea}
+.nt-viewer{border:0;padding:0;background:transparent;max-width:96vw;max-height:94vh}
+.nt-viewer::backdrop{background:rgba(0,0,0,.8)}
+.nt-viewer img{max-width:96vw;max-height:90vh;display:block;border-radius:8px}
+.nt-close{position:fixed;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#111;font-size:18px;cursor:pointer}
+:root[data-theme="dark"] .nb,:root[data-theme="dark"] .nt-kopt:has(input:checked){background:#1d3557;color:#cfe3ff}
+:root[data-theme="dark"] .nb.warn{background:#4a1c1a;color:#ffd4cf}
+:root[data-theme="dark"] .nt-appt{color:#9cc6ff}
+:root[data-theme="dark"] .nt-flash{background:#163d24;color:#c9f2d5}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .nb,:root:not([data-theme="light"]) .nt-kopt:has(input:checked){background:#1d3557;color:#cfe3ff}
+  :root:not([data-theme="light"]) .nb.warn{background:#4a1c1a;color:#ffd4cf}
+  :root:not([data-theme="light"]) .nt-appt{color:#9cc6ff}
+  :root:not([data-theme="light"]) .nt-flash{background:#163d24;color:#c9f2d5}
+}
 #exTable td,#exTable th{font-size:13.5px}
 #exTable th{cursor:default}
 
@@ -480,6 +545,7 @@ tbody tr.click{transition:background .15s}
       <div class="advice" id="pAdvice"></div>
       <div class="kpis" id="pKpis" style="margin-bottom:0"></div>
     </div>
+    <div class="card" id="pNotes"></div>
     <div class="card">
       <h2>แนวโน้มความดันโลหิต</h2>
       <div class="desc">จุดใหญ่สีส้ม/แดง = วันที่เกินเกณฑ์ (สีตามระดับ) · เส้นประ = เกณฑ์ขับรถ 140 / 90</div>
@@ -495,7 +561,7 @@ tbody tr.click{transition:background .15s}
       <div class="card">
         <h2>บันทึกรายวัน</h2>
         <div class="desc">ล่าสุดอยู่ด้านบน · ชี้ที่ระดับเพื่อดูวิธีปฏิบัติ</div>
-        <div class="tbl-wrap" style="max-height:300px;overflow-y:auto"><table id="pTable"></table></div>
+        <div class="tbl-wrap" style="max-height:300px;overflow-y:auto" tabindex="0" role="region" aria-label="ประวัติผลวัด (เลื่อนดูได้)"><table id="pTable"></table></div>
       </div>
     </div>
   </section>
@@ -615,6 +681,7 @@ const norm = s => String(s || '').toLowerCase().replace(/^(นาย|นาง�
 const matches = (d, q) => !q || norm(d.name).includes(q) || norm(d.plate).includes(q) || norm(d.name.replace(/^(นาย|นางสาว|นาง)/,'')).includes(q);
 let group = 'ALL';
 const tag = d => d.plate || d.group;
+const NB = d => window.BPNotes ? BPNotes.badge(d) : '';   // ป้ายหมายเหตุล่าสุด (เช่น 💊 ทานยาอยู่)
 const periodTxt = r => r && r.period ? ` (${r.period})` : '';
 // วันที่ที่มีข้อมูลของคนกลุ่มที่เลือก — "วันล่าสุด" ต้องเป็นของกลุ่มนั้น (Forklift กับ TPT วัดคนละวันได้)
 const datesOf = ds => [...new Set(ds.flatMap(d => d.readings.map(r => r.date)))].sort();
@@ -829,7 +896,7 @@ function renderTable(ds) {
   $('ovTable').innerHTML = `<thead><tr>${cols.map(([k,l,num]) =>
       `<th data-k="${k}" class="${num?'num':''}" tabindex="0" aria-sort="${k===sortKey ? (sortDir>0?'ascending':'descending') : 'none'}">${l}${k===sortKey ? (sortDir>0?' ▲':' ▼') : ''}</th>`).join('')}</tr></thead><tbody>` +
     rows.map(d => `<tr class="click" data-id="${d.id}">
-      <td><button class="namebtn" type="button" data-id="${d.id}">${esc(d.name)}</button></td><td>${esc(tag(d))}</td><td>${esc(d.shift)}</td>
+      <td><button class="namebtn" type="button" data-id="${d.id}">${esc(d.name)}</button>${NB(d)}</td><td>${esc(tag(d))}</td><td>${esc(d.shift)}</td>
       <td>${d.last ? `${chip(d.last.st)} <span class="num">${d.last.sys ?? '–'}/${d.last.dia ?? '–'}</span> <span class="sub">${dShort(d.last.date)}${periodTxt(d.last)}</span>` : '–'}</td>
       <td>${d.avgSys != null ? `${chip(d.avgSt)} <span class="num">${r0(d.avgSys)}/${r0(d.avgDia)}</span>` : '–'}</td>
       <td class="num">${r0(d.avgPulse)}</td>
@@ -877,6 +944,7 @@ function renderPerson() {
   $('pName').textContent = d.name;
   $('pMeta').textContent = `${d.plate ? 'ทะเบียน ' + d.plate + ' · ' : ''}${d.group} · กะ ${d.shift}${d.dept ? ' · ' + d.dept : ''}${d.note ? ' · ' + d.note : ''}${d.hasPeriods ? ' · วัดวันละ 2 ครั้ง (เช้า/บ่าย)' : ''}`;
   $('pChip').innerHTML = chip(d.avgSt);
+  if (window.BPNotes) BPNotes.mount(d, $('pNotes'));
   const minP = d.all.map(r=>r.pulse).filter(Boolean);
   const adv = $('pAdvice');
   if (d.last) {
@@ -994,7 +1062,7 @@ function renderAlerts() {
           <div class="al-ghead">${chip(k)}<span class="n">${cnt(k)} คน</span><span class="act">${esc(L.act)}</span></div>
           <div class="al-names">${items.filter(x => x.r.st === k).map(({ d, r }) =>
             `<button class="al-item al-name" data-id="${d.id}" type="button" title="ชีพจร ${r.pulse ?? '–'} · คลิกเพื่อดูประวัติ">
-              <span>${esc(d.name)}</span><span class="v">${r.sys ?? '–'}/${r.dia ?? '–'}${r.period ? ` <small>${esc(r.period)}</small>` : ''}</span><span class="m">${esc(tag(d))} · กะ ${esc(d.shift)}${!date && new Set(Object.values(LG)).size > 1 ? ' · ' + dShort(r.date) : ''}</span>${newKeys.has(alertKey(d, r)) ? '<span class="new">ใหม่</span>' : ''}</button>`).join('')}</div></div>`;
+              <span>${esc(d.name)}${NB(d)}</span><span class="v">${r.sys ?? '–'}/${r.dia ?? '–'}${r.period ? ` <small>${esc(r.period)}</small>` : ''}</span><span class="m">${esc(tag(d))} · กะ ${esc(d.shift)}${!date && new Set(Object.values(LG)).size > 1 ? ' · ' + dShort(r.date) : ''}</span>${newKeys.has(alertKey(d, r)) ? '<span class="new">ใหม่</span>' : ''}</button>`).join('')}</div></div>`;
       }).join('')
     : `<div class="al-ok">ผลวัด ${date ? dLong(date) : 'ล่าสุด (' + latestDesc(LG) + ')'} ทั้ง ${measured} คน ความดันไม่เกิน 140/90 — ขับรถได้ตามปกติ</div>`;
   $('alertBody').querySelectorAll('.al-item').forEach(b => b.onclick = () => selectPerson(+b.dataset.id));
@@ -1097,9 +1165,9 @@ function exInit() {
     const n = document.querySelector(`.ex-native[data-for="${b.dataset.for}"]`); n.value = exDate(b.dataset.for) || '';
     try { n.showPicker(); } catch (e) { n.focus(); n.click(); }
   });
-  document.querySelectorAll('.ex-native').forEach(n => n.addEventListener('change', () => { if (n.value) { exSetDate(n.dataset.for, n.value); exBuild(); } }));
+  document.querySelectorAll('.ex-native').forEach(n => n.addEventListener('change', () => { if (n.value) { EX.swapped = false; exSetDate(n.dataset.for, n.value); exBuild(); } }));
   ['exFrom', 'exTo'].forEach(id => {
-    $(id).addEventListener('input', () => { const el = $(id), v = el.value.trim(); if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v) || !v) exBuild(); else el.setAttribute('aria-invalid', 'false'); });
+    $(id).addEventListener('input', () => { EX.swapped = false; const el = $(id), v = el.value.trim(); if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v) || !v) exBuild(); else el.setAttribute('aria-invalid', 'false'); });
     $(id).addEventListener('blur', () => { const iso = exDate(id); if (iso) exSetDate(id, iso); exBuild(); });
   });
   exRenderSources();
@@ -1119,7 +1187,7 @@ function exInit() {
   $('exPresets').querySelectorAll('button').forEach(b => b.onclick = () => {
     const p = presets[+b.dataset.i][1];
     $('exType').value = p.type; $('exGroup').value = p.group || 'ALL'; $('exShift').value = 'ALL'; $('exPerson').value = '';
-    $('exPeriod').value = 'ALL'; exSetDate('exFrom', d0); exSetDate('exTo', d1);
+    $('exPeriod').value = 'ALL'; exSetDate('exFrom', d0); exSetDate('exTo', d1); EX.swapped = false;
     exSyncControls(); if (p.level) $('exLevel').value = p.level; if (p.by) $('exBy').value = p.by;
     exBuild();
   });
@@ -1144,9 +1212,13 @@ function exOpen() { exInit(); exBuild(); }
 
 // ---- คัดคน + รายการวัดตามเงื่อนไข
 function exSelect() {
-  const g = exVal('exGroup'), sh = exVal('exShift'), from = exDate('exFrom') || DATA.dates[0], to = exDate('exTo') || DATA.dates[DATA.dates.length - 1], per = exVal('exPeriod');
+  const g = exVal('exGroup'), sh = exVal('exShift'), per = exVal('exPeriod');
+  let from = exDate('exFrom') || DATA.dates[0], to = exDate('exTo') || DATA.dates[DATA.dates.length - 1];
   const q = norm((exVal('exPerson') || '').replace(/\s*\(.*\)\s*$/, ''));
   const people = DATA.drivers.filter(d => (g === 'ALL' || d.group === g) && (sh === 'ALL' || d.shift === sh) && (!q || $('exPersonWrap').classList.contains('hidden') || matches(d, q)));
+  // ใส่วันที่กลับด้าน (ตั้งแต่ > ถึง) → สลับให้ แทนที่จะได้ 0 แถวเงียบๆ
+  // ข้อความแจ้งค้างไว้จนกว่าจะแก้วันที่ใหม่หรือกดพรีเซ็ต
+  if (from > to) { [from, to] = [to, from]; exSetDate('exFrom', from); exSetDate('exTo', to); EX.swapped = true; }
   const inRange = r => r.date >= from && r.date <= to && (per === 'ALL' || !r.period || r.period === per);
   return { people, inRange, from, to };
 }
@@ -1165,7 +1237,7 @@ function exBuild() {
     rows.sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]) || a[5].localeCompare(b[5]) || a[2].localeCompare(b[2], 'th') || a[1].localeCompare(b[1]));
   } else if (t === 'person') {
     title = 'สรุปรายบุคคล';
-    head = ['ชื่อ – สกุล', 'ประเภท', 'ทะเบียน', 'กะ', 'จำนวนครั้ง', 'เฉลี่ยบน', 'เฉลี่ยล่าง', 'ระดับเฉลี่ย', 'สูงสุดบน', 'สูงสุดล่าง', 'ชีพจรเฉลี่ย', 'ครั้งที่เกินเกณฑ์', '% เกินเกณฑ์', 'สูงปานกลางขึ้นไป (ครั้ง)', 'ผลวันล่าสุด', 'วันที่ล่าสุด'];
+    head = ['ชื่อ – สกุล', 'ประเภท', 'ทะเบียน', 'กะ', 'จำนวนครั้ง', 'เฉลี่ยบน', 'เฉลี่ยล่าง', 'ระดับเฉลี่ย', 'สูงสุดบน', 'สูงสุดล่าง', 'ชีพจรเฉลี่ย', 'ครั้งที่เกินเกณฑ์', '% เกินเกณฑ์', 'สูงปานกลางขึ้นไป (ครั้ง)', 'ผลวันล่าสุด', 'วันที่ล่าสุด', 'หมายเหตุล่าสุด'];
     people.forEach(d => {
       const rs = d.all.filter(inRange); if (!rs.length) return;
       const S = rs.map(r => r.sys).filter(Boolean), D = rs.map(r => r.dia).filter(Boolean), P = rs.map(r => r.pulse).filter(Boolean);
@@ -1174,7 +1246,7 @@ function exBuild() {
       if (lvl === 'everOver' && !nOver) return;
       const days = d.readings.filter(inRange), last = days[days.length - 1];
       rows.push([d.name, d.group, d.plate || '', d.shift, rs.length, r1(aS), r1(aD), LV[st].label, S.length ? Math.max(...S) : '', D.length ? Math.max(...D) : '', r1(avg(P)),
-        nOver, pct(nOver, rs.length), rs.filter(r => r.st === 'l5' || r.st === 'l6').length, last ? `${last.sys ?? '–'}/${last.dia ?? '–'} ${LV[last.st].label}` : '', last ? last.date : '']);
+        nOver, pct(nOver, rs.length), rs.filter(r => r.st === 'l5' || r.st === 'l6').length, last ? `${last.sys ?? '–'}/${last.dia ?? '–'} ${LV[last.st].label}` : '', last ? last.date : '', window.BPNotes ? BPNotes.summary(d) : '']);
     });
     rows.sort((a, b) => b[12] - a[12] || b[5] - a[5]);
   } else if (t === 'group') {
@@ -1219,7 +1291,7 @@ function exBuild() {
     (rows.length ? rows.slice(0, MAXP).map(r => `<tr>${r.map((c, i) => `<td class="${typeof c === 'number' ? 'num' : ''}">${dcols.includes(i) ? dmy(c) : esc(c)}</td>`).join('')}</tr>`).join('')
       : `<tr><td colspan="${head.length}" class="empty">ไม่มีข้อมูลตามเงื่อนไขนี้</td></tr>`) + '</tbody>';
   $('exCount').innerHTML = `<b>${title}</b> · ${rows.length.toLocaleString('th-TH')} แถว`;
-  $('exNote').textContent = (rows.length > MAXP ? `แสดงตัวอย่าง ${MAXP} แถวแรก — ไฟล์ที่ดาวน์โหลดมีครบ ${rows.length.toLocaleString('th-TH')} แถว · ` : '') + 'เงื่อนไข: ' + cond.join(' · ');
+  $('exNote').textContent = (EX.swapped ? '↔ สลับวันที่ให้แล้ว ("ตั้งแต่" ต้องมาก่อน "ถึง") · ' : '') + (rows.length > MAXP ? `แสดงตัวอย่าง ${MAXP} แถวแรก — ไฟล์ที่ดาวน์โหลดมีครบ ${rows.length.toLocaleString('th-TH')} แถว · ` : '') + 'เงื่อนไข: ' + cond.join(' · ');
   ['exXlsx', 'exCsv', 'exPrint'].forEach(id => $(id).disabled = !rows.length);
 }
 // ชื่อไฟล์เป็นภาษาอังกฤษ: บางเบราว์เซอร์ตัดตัวอักษรไทยในชื่อไฟล์ดาวน์โหลดทิ้ง (เหลือแค่ "download")
@@ -1400,11 +1472,19 @@ $('critTable').innerHTML = `<thead><tr><th>ระดับความดัน<
 
 // ---- load data + auto refresh every 5 min
 const REFRESH_MS = 5 * 60 * 1000;
+// หมายเหตุเปลี่ยน (realtime) → วาดใหม่เฉพาะส่วนที่มีป้าย ไม่วาดกราฟใหม่
+function refreshNotes() {
+  if (!DATA) return;
+  renderAlerts();
+  if (!personId) renderTable(visible());
+  if (tab === 'export' && EX.inited) exBuild();
+}
 function applyData(data, first) {
   DATA = enrich(data);
   if (first) requestAnimationFrame(() => { playIn(document.body, 2000); countUp($('ovKpis')); countUp($('pKpis')); moveTabInk(); });
   buildFilters();
   checkNewAlerts(first);
+  if (first && window.BPNotes) BPNotes.init({ esc, onChange: refreshNotes });
   const f = DATA.dates[0], l = DATA.dates[DATA.dates.length-1];
   $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · ${DATA.groups.map(g => `${g} ${DATA.drivers.filter(d => d.group === g).length} คน`).join(' · ')}` : 'ยังไม่มีข้อมูล';
   const g = new Date(DATA.generatedAt);
@@ -1423,15 +1503,13 @@ function applyData(data, first) {
   const cfg = window.BP_FIREBASE_CONFIG;
   if (!cfg || !cfg.databaseURL || !cfg.apiKey) return;
   const PATH = window.BP_PRESENCE_PATH || 'bp-dashboard/presence';
-  const SDK = 'https://cdn.jsdelivr.net/npm/firebase@10.12.2/';
-  const load = src => new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
   let me = null;
   try { me = localStorage.getItem('bp-presence-id'); } catch (e) {}
   if (!me) { me = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); try { localStorage.setItem('bp-presence-id', me); } catch (e) {} }
   const tab = Math.random().toString(36).slice(2, 10);
   const box = $('onlineBox');
-  load(SDK + 'firebase-app-compat.js').then(() => load(SDK + 'firebase-database-compat.js')).then(() => {
-    const app = firebase.apps.find(a => a.name === 'bp-presence') || firebase.initializeApp(cfg, 'bp-presence');
+  if (!window.bpFirebaseApp) return;
+  window.bpFirebaseApp().then(app => {   // ใช้ Firebase app เดียวกับหมายเหตุ (notes.js)
     const db = app.database();
     const mine = db.ref(`${PATH}/${me}/${tab}`);
     db.ref('.info/connected').on('value', snap => {
