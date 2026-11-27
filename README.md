@@ -62,6 +62,61 @@ Dashboard แสดงผลการวัดความดันโลหิ�
 
 ถ้าตั้ง `window.BP_FIREBASE_CONFIG = null` ใน `site/firebase-config.js` ตัวนับจะซ่อนไป ส่วนอื่นใช้งานได้ปกติ
 
+## หมายเหตุ / การติดตาม รายบุคคล (Firebase)
+ในหน้ารายบุคคลมีการ์ด **📝 หมายเหตุ / การติดตาม** — บันทึกครั้งเดียว ใช้ต่อได้ทุกเดือน (ผูกกับ ประเภท + ชื่อ ไม่ผูกกับเดือน)
+- สถานะสำเร็จรูป: 💊 รักษาแล้ว · ทานยาความดันอยู่ / 📅 รอพบแพทย์ตามใบนัด (มีช่องวันนัด — เลยวันนัดจะขึ้นสีแดง) / 🏥 พบแพทย์แล้ว · ให้ติดตามอาการ / 🗣️ แจ้งให้ไปพบแพทย์แล้ว / 🔁 วัดซ้ำแล้ว ค่ากลับมาปกติ / 📝 อื่นๆ (ระบุเอง)
+- แนบภาพได้สูงสุด 4 ภาพ (ใบนัด, ซองยา ฯลฯ) — ย่อเป็น JPEG ไม่เกิน ~480 KB ต่อภาพแล้วเก็บใน Realtime Database (Firebase Storage ต้องใช้แพลนเสียเงิน จึงไม่ใช้)
+- **ทุกคนดูได้** (ข้อความ + ภาพ) · **เพิ่ม / แก้ / ลบ ได้เฉพาะบัญชีที่ผู้ดูแลให้สิทธิ์**
+- หมายเหตุล่าสุดแสดงเป็นป้ายในตารางรายชื่อ, แถบ "ต้องติดตาม" และคอลัมน์ "หมายเหตุล่าสุด" ในรายงานสรุปรายบุคคล
+
+### ตั้งค่าครั้งแรก (ผู้ดูแล)
+1. **เปิดล็อกอินแบบอีเมล:** [Firebase Console → Authentication → Sign-in method](https://console.firebase.google.com/project/test-stock-78d08/authentication/providers) → เปิด **Email/Password** (ถ้ายังไม่เปิด)
+2. **สร้างบัญชีคนที่บันทึกได้:** Authentication → Users → **Add user** (อีเมล + รหัสผ่าน) → คัดลอก **User UID**
+3. **ให้สิทธิ์:** [Realtime Database → Data](https://console.firebase.google.com/project/test-stock-78d08/database/test-stock-78d08-default-rtdb/data) → ที่ `bp-dashboard` กด ＋ เพิ่ม `editors` → ภายในเพิ่ม key = UID, value = `true`
+   (คนที่ล็อกอินแต่ยังไม่มีสิทธิ์ หน้าเว็บจะแสดง UID ให้ส่งมาให้ผู้ดูแล)
+4. **Rules:** แทนที่ส่วน `"bp-dashboard": { ... }` เดิมด้วยชุดนี้ (⚠️ ห้ามแตะส่วนอื่นของ 5ส) แล้ว Publish
+```json
+"bp-dashboard": {
+  "presence": {
+    ".read": true,
+    "$browser": {
+      ".validate": "$browser.length <= 32",
+      "$tab": {
+        ".write": true,
+        ".validate": "$tab.length <= 16 && newData.isNumber() && newData.val() <= now + 60000"
+      }
+    }
+  },
+  "editors": {
+    "$uid": { ".read": "auth != null && auth.uid === $uid" }
+  },
+  "notes": {
+    ".read": true,
+    "$person": {
+      ".validate": "$person.length <= 120",
+      "$note": {
+        ".write": "auth != null && root.child('bp-dashboard/editors').child(auth.uid).val() === true",
+        ".validate": "newData.hasChildren(['kind', 'date', 'byUid', 'at']) && newData.child('kind').isString() && newData.child('kind').val().length <= 20 && newData.child('date').isString() && newData.child('date').val().matches(/^\\d{4}-\\d{2}-\\d{2}$/) && (!newData.child('text').exists() || (newData.child('text').isString() && newData.child('text').val().length <= 1000)) && (!newData.child('appt').exists() || (newData.child('appt').isString() && newData.child('appt').val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)))"
+      }
+    }
+  },
+  "noteImages": {
+    ".read": true,
+    "$person": {
+      "$note": {
+        ".write": "auth != null && root.child('bp-dashboard/editors').child(auth.uid).val() === true",
+        "$img": {
+          ".validate": "$img.matches(/^i[0-3]$/) && newData.isString() && newData.val().beginsWith('data:image/') && newData.val().length <= 700000"
+        }
+      }
+    }
+  }
+}
+```
+- ใครสมัครบัญชีเองได้ก็ **บันทึกไม่ได้** ถ้า UID ไม่อยู่ใน `bp-dashboard/editors` (Rules ตรวจที่เซิร์ฟเวอร์ ไม่ใช่แค่ซ่อนปุ่ม)
+- ⚠️ ข้อความและภาพแนบ **ทุกคนที่มีลิงก์เว็บเปิดดูได้** (ตามที่เลือกไว้) — แนบเฉพาะสิ่งที่จำเป็น
+- พื้นที่ฟรีของ Realtime Database = 1 GB (ภาพละ ~0.1–0.5 MB → หลายพันภาพ)
+
 ## อัปเดตข้อมูล
 1. บันทึกไฟล์ Excel ตามรูปแบบเดิม (ชื่อพนักงานขับรถ | ทะเบียนรถ | กะ | … | `วันที่ 1-30 /11/26` → บน / ล่าง / ชีพจร)
 2. อัปโหลดไฟล์ไปที่โฟลเดอร์ `data/` (Add file → Upload files) — แทนที่ไฟล์เดิม หรือเพิ่มไฟล์เดือนใหม่ก็ได้
