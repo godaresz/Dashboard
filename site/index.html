@@ -342,6 +342,20 @@ header.top .online b{color:#fff}
 header.top .online i{background:#86efac}
 header.top .btn-theme{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:7px 14px;position:relative;z-index:1}
 header.top .btn-theme:hover{background:rgba(255,255,255,.26)}
+/* มุมขวาบน: เข้าสู่ระบบ + สลับธีม */
+.top-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;align-self:flex-start;position:relative;z-index:1;margin-left:auto}
+.auth-box{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.auth-btn{font:inherit;font-size:14px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:7px 14px;min-height:36px}
+.auth-btn:hover{background:rgba(255,255,255,.26)}
+.auth-who{font-size:13px;color:#fff;background:rgba(0,0,0,.18);border-radius:999px;padding:6px 12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nt-dlg{border:0;border-radius:16px;padding:20px;width:min(380px,92vw);background:var(--surface);color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.nt-dlg::backdrop{background:rgba(0,0,0,.45)}
+.nt-dlg h2{margin:0 0 4px;font-size:18px}
+.nt-dlg .desc{margin-bottom:12px}
+.nt-dlg form.nt-login{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:10px;border:0;padding:0;margin:0;background:none;width:auto}
+.nt-dlg label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--text-2)}
+.nt-dlg input{font:inherit;font-size:15px;padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-height:42px}
+.nt-dlg .row{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
 @keyframes heroShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 @keyframes livePing{0%{box-shadow:0 0 0 0 rgba(134,239,172,.7)}70%{box-shadow:0 0 0 8px rgba(134,239,172,0)}100%{box-shadow:0 0 0 0 rgba(134,239,172,0)}}
 
@@ -403,7 +417,10 @@ tbody tr.click{transition:background .15s}
       <div class="sub live" id="liveNote"></div>
       <div class="online hidden" id="onlineBox" title="จำนวนเบราว์เซอร์ที่เปิดหน้านี้อยู่ตอนนี้ (อัปเดตทันทีเมื่อมีคนเข้า/ออก) — ไม่เก็บชื่อหรือข้อมูลส่วนตัว"><i></i> กำลังดูอยู่ <b id="onlineN">–</b> คน</div>
     </div>
-    <button class="btn-theme" id="themeBtn" type="button">◐ สลับธีม</button>
+    <div class="top-actions">
+      <div class="auth-box hidden" id="authBox"></div>
+      <button class="btn-theme" id="themeBtn" type="button">◐ สลับธีม</button>
+    </div>
   </header>
 
   <div class="filters">

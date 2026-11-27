@@ -135,44 +135,65 @@ function loadImages(k) {
   return p;
 }
 const $r = r => mounted && mounted.el.querySelector(`[data-r="${r}"]`);
-function paint() { if (!mounted || !mounted.el.isConnected) return; paintAuth(); paintList(); if (form && !isEditor) closeForm(); }
+function paint() { paintHeader(); if (!mounted || !mounted.el.isConnected) return; paintAuth(); paintList(); if (form && !isEditor) closeForm(); }
 
+// มุมขวาบนของหัวเว็บ: ปุ่มเข้าสู่ระบบ / ชื่อบัญชี + ออกจากระบบ
+function paintHeader() {
+  const box = document.getElementById('authBox'); if (!box) return;
+  const usable = state === 'ready' || state === 'denied';
+  box.classList.toggle('hidden', !usable);
+  if (!usable) return;
+  const sig = user ? 'in:' + user.uid : 'out';
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  box.innerHTML = user
+    ? `<span class="auth-who" title="${esc(user.email || user.uid)}">👤 ${esc(user.email || user.uid)}</span><button type="button" class="auth-btn" data-a="logout">ออกจากระบบ</button>`
+    : `<button type="button" class="auth-btn" data-a="login">🔐 เข้าสู่ระบบ</button>`;
+  const b = box.querySelector('[data-a]');
+  b.onclick = user ? () => auth.signOut() : openLogin;
+}
+// การ์ดหมายเหตุ: สถานะการเชื่อมต่อ / ปุ่มเพิ่ม / แจ้งว่ายังไม่มีสิทธิ์
 function paintAuth() {
   const box = $r('auth'); if (!box) return;
   if (state === 'off' || state === 'error') { box.innerHTML = `<div class="nt-msg">ระบบหมายเหตุใช้งานไม่ได้ตอนนี้ (เชื่อมต่อฐานข้อมูลไม่ได้)</div>`; return; }
   if (state === 'denied') { box.innerHTML = `<div class="nt-msg">ระบบหมายเหตุยังไม่พร้อม — ผู้ดูแลต้องตั้งค่า Rules ใน Firebase ก่อน (ดู README)</div>`; return; }
   if (!user) {
-    if (box.querySelector('form.nt-login')) return;   // กำลังพิมพ์รหัสอยู่ ไม่วาดทับ
-    box.innerHTML = `<button type="button" class="nt-btn ghost" data-a="showLogin">🔐 เข้าสู่ระบบเพื่อเพิ่มหมายเหตุ</button>`;
-    box.querySelector('[data-a="showLogin"]').onclick = showLogin;
+    box.innerHTML = `<span class="nt-who">ต้องการเพิ่มหมายเหตุ? กด <b>🔐 เข้าสู่ระบบ</b> ที่มุมขวาบนของหน้า</span>`;
     return;
   }
-  box.innerHTML = `<span class="nt-who">ล็อกอิน: <b>${esc(user.email || user.uid)}</b></span>
-    ${isEditor ? `<button type="button" class="nt-btn" data-a="add">＋ เพิ่มหมายเหตุ</button>` : ''}
-    <button type="button" class="nt-btn ghost" data-a="logout">ออกจากระบบ</button>
-    ${isEditor ? '' : `<div class="nt-msg">บัญชีนี้ยังไม่มีสิทธิ์บันทึก — ส่งรหัสนี้ให้ผู้ดูแลเพิ่มสิทธิ์: <code>${esc(user.uid)}</code></div>`}`;
-  box.querySelector('[data-a="logout"]').onclick = () => auth.signOut();
+  box.innerHTML = isEditor ? `<button type="button" class="nt-btn" data-a="add"${form ? ' disabled' : ''}>＋ เพิ่มหมายเหตุ</button>`
+    : `<div class="nt-msg">บัญชี ${esc(user.email || '')} ยังไม่มีสิทธิ์บันทึก — ส่งรหัสนี้ให้ผู้ดูแลเพิ่มสิทธิ์: <code>${esc(user.uid)}</code></div>`;
   const add = box.querySelector('[data-a="add"]'); if (add) add.onclick = () => openForm(null);
-  if (form) add && (add.disabled = true);
 }
-function showLogin() {
-  const box = $r('auth');
-  box.innerHTML = `<form class="nt-login" novalidate>
-      <label>อีเมล <input type="email" name="email" autocomplete="username" required></label>
-      <label>รหัสผ่าน <input type="password" name="pw" autocomplete="current-password" required></label>
-      <button type="submit" class="nt-btn">เข้าสู่ระบบ</button> <button type="button" class="nt-btn ghost" data-a="cancel">ยกเลิก</button>
-      <div class="nt-err" role="alert"></div>
-    </form>`;
-  const f = box.querySelector('form'); f.email.focus();
-  f.querySelector('[data-a="cancel"]').onclick = () => { box.innerHTML = ''; paintAuth(); };
-  f.onsubmit = e => {
-    e.preventDefault();
-    const em = f.email.value.trim(), pw = f.pw.value, err = f.querySelector('.nt-err');
-    if (!em || !pw) { err.textContent = 'กรอกอีเมลและรหัสผ่าน'; return; }
-    const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ…'; err.textContent = '';
-    auth.signInWithEmailAndPassword(em, pw).then(() => { box.innerHTML = ''; paintAuth(); })
-      .catch(x => { err.textContent = friendly(x); btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; });
-  };
+// หน้าต่างเข้าสู่ระบบ (เปิดจากปุ่มมุมขวาบน)
+let loginDlg = null;
+function openLogin() {
+  if (!auth) return;
+  if (!loginDlg) {
+    loginDlg = document.createElement('dialog'); loginDlg.className = 'nt-dlg'; loginDlg.setAttribute('aria-labelledby', 'ntLoginT');
+    loginDlg.innerHTML = `<h2 id="ntLoginT">🔐 เข้าสู่ระบบ</h2><div class="desc">สำหรับผู้ที่ได้รับสิทธิ์บันทึกหมายเหตุ</div>
+      <form class="nt-login" novalidate>
+        <label>อีเมล <input type="email" name="email" autocomplete="username" required></label>
+        <label>รหัสผ่าน <input type="password" name="pw" autocomplete="current-password" required></label>
+        <div class="nt-err" role="alert"></div>
+        <div class="row"><button type="button" class="nt-btn ghost" data-a="cancel">ยกเลิก</button><button type="submit" class="nt-btn">เข้าสู่ระบบ</button></div>
+      </form>`;
+    document.body.appendChild(loginDlg);
+    const f = loginDlg.querySelector('form');
+    f.querySelector('[data-a="cancel"]').onclick = () => loginDlg.close();
+    f.onsubmit = e => {
+      e.preventDefault();
+      const em = f.email.value.trim(), pw = f.pw.value, err = f.querySelector('.nt-err');
+      if (!em || !pw) { err.textContent = 'กรอกอีเมลและรหัสผ่าน'; return; }
+      const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ…'; err.textContent = '';
+      auth.signInWithEmailAndPassword(em, pw).then(() => { f.pw.value = ''; loginDlg.close(); })
+        .catch(x => { err.textContent = friendly(x); })
+        .finally(() => { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; });
+    };
+  }
+  loginDlg.querySelector('.nt-err').textContent = '';
+  if (loginDlg.showModal) loginDlg.showModal(); else loginDlg.setAttribute('open', '');
+  loginDlg.querySelector('[name=email]').focus();
 }
 
 function paintList() {
