@@ -238,7 +238,7 @@ function openForm(id) {
     </div>
     <label class="nt-textf">รายละเอียด <textarea name="text" rows="3" maxlength="1000">${esc(n && n.text)}</textarea></label>
     <div class="nt-imgf">
-      <label class="nt-btn ghost nt-file">📷 แนบภาพ (สูงสุด ${MAX_IMAGES} ภาพ)<input type="file" accept="image/*" multiple></label>
+      <label class="nt-btn ghost nt-file">📷 แนบภาพ (สูงสุด ${MAX_IMAGES} ภาพ)<input type="file" accept="image/*,.heic,.heif" multiple></label>
       <div class="nt-prev"></div>
     </div>
     <div class="nt-actions"><button type="submit" class="nt-btn">💾 บันทึก</button> <button type="button" class="nt-btn ghost" data-a="cancel">ยกเลิก</button>
@@ -266,16 +266,25 @@ function paintPreview(f) {
 function addFiles(input, f) {
   const files = [...input.files].slice(0, MAX_IMAGES - form.images.length); input.value = '';
   const st = f.querySelector('.nt-status'); if (!files.length) return;
-  st.textContent = 'กำลังย่อภาพ…';
-  Promise.all(files.map(x => compress(x).catch(() => null))).then(rs => {
+  st.textContent = files.some(isHeic) ? 'กำลังแปลงภาพ HEIC (iPhone) และย่อภาพ… อาจใช้เวลาสักครู่' : 'กำลังย่อภาพ…';
+  Promise.all(files.map(x => compress(x).catch(() => isHeic(x) ? fromHeic(x) : null).catch(() => null))).then(rs => {
     const okImgs = rs.filter(Boolean); form.images.push(...okImgs); paintPreview(f);
-    st.textContent = okImgs.length < files.length ? 'บางภาพเปิดไม่ได้ (ลองถ่าย/บันทึกเป็น JPG หรือ PNG)' : '';
+    st.textContent = okImgs.length < files.length ? 'บางภาพเปิดไม่ได้ (รองรับ JPG, PNG, HEIC — ลองถ่ายใหม่หรือบันทึกเป็น JPG)' : '';
   });
+}
+// ภาพ HEIC/HEIF (ค่าเริ่มต้นของ iPhone): มีแต่ Safari ที่เปิดได้เอง → เบราว์เซอร์อื่นแปลงเป็น JPEG ด้วย heic2any
+// (โหลดเฉพาะตอนแนบไฟล์ HEIC ครั้งแรก ~1.3 MB) แล้วย่อตามปกติ
+const isHeic = f => /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name || '');
+let heicLoading = null;
+const loadHeic = () => window.heic2any ? Promise.resolve() : heicLoading || (heicLoading = loadScript('https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js').catch(e => { heicLoading = null; throw e; }));
+function fromHeic(file) {
+  return loadHeic().then(() => window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
+    .then(out => compress(new File([Array.isArray(out) ? out[0] : out], 'photo.jpg', { type: 'image/jpeg' })));
 }
 // ย่อด้านยาวสุดไม่เกิน MAX_SIDE แล้วบีบเป็น JPEG จนขนาดไม่เกิน MAX_DATAURL
 function compress(file) {
   return new Promise((ok, bad) => {
-    if (!/^image\//.test(file.type)) return bad(new Error('type'));
+    if (!/^image\//.test(file.type) && !isHeic(file)) return bad(new Error('type'));
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
