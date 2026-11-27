@@ -269,17 +269,21 @@ function addFiles(input, f) {
   st.textContent = files.some(isHeic) ? 'กำลังแปลงภาพ HEIC (iPhone) และย่อภาพ… อาจใช้เวลาสักครู่' : 'กำลังย่อภาพ…';
   Promise.all(files.map(x => compress(x).catch(() => isHeic(x) ? fromHeic(x) : null).catch(() => null))).then(rs => {
     const okImgs = rs.filter(Boolean); form.images.push(...okImgs); paintPreview(f);
-    st.textContent = okImgs.length < files.length ? 'บางภาพเปิดไม่ได้ (รองรับ JPG, PNG, HEIC — ลองถ่ายใหม่หรือบันทึกเป็น JPG)' : '';
+    st.textContent = okImgs.length < files.length ? 'บางภาพเปิดไม่ได้ (รองรับ JPG, PNG, HEIC) — ลองแคปหน้าจอภาพนั้นแล้วแนบแทน หรือตั้ง iPhone: การตั้งค่า › กล้อง › รูปแบบ › "เข้ากันได้มากที่สุด"' : '';
   });
 }
-// ภาพ HEIC/HEIF (ค่าเริ่มต้นของ iPhone): มีแต่ Safari ที่เปิดได้เอง → เบราว์เซอร์อื่นแปลงเป็น JPEG ด้วย heic2any
-// (โหลดเฉพาะตอนแนบไฟล์ HEIC ครั้งแรก ~1.3 MB) แล้วย่อตามปกติ
+// ภาพ HEIC/HEIF (ค่าเริ่มต้นของ iPhone): มีแต่ Safari ที่เปิดได้เอง → เบราว์เซอร์อื่นแปลงเป็น JPEG ก่อนย่อ
+// ตัวหลัก heic-to (libheif รุ่นใหม่ — เปิดไฟล์จาก iPhone รุ่นใหม่ได้ · ไฟล์ iife ให้ window.HeicTo เป็นฟังก์ชันแปลงเลย) · ถ้าไม่สำเร็จลอง heic2any (libheif รุ่นเก่า) อีกชั้น
+// ทั้งสองโหลดเฉพาะตอนแนบไฟล์ HEIC (หน้าเว็บปกติไม่ช้าลง)
 const isHeic = f => /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name || '');
-let heicLoading = null;
-const loadHeic = () => window.heic2any ? Promise.resolve() : heicLoading || (heicLoading = loadScript('https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js').catch(e => { heicLoading = null; throw e; }));
+const once = (test, url) => { let p = null; return () => test() ? Promise.resolve() : p || (p = loadScript(url).catch(e => { p = null; throw e; })); };
+const loadHeicTo = once(() => window.HeicTo, 'https://cdn.jsdelivr.net/npm/heic-to@1.6.7/dist/iife/heic-to.js');
+const loadHeic2any = once(() => window.heic2any, 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js');
 function fromHeic(file) {
-  return loadHeic().then(() => window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
-    .then(out => compress(new File([Array.isArray(out) ? out[0] : out], 'photo.jpg', { type: 'image/jpeg' })));
+  const asJpeg = blob => compress(new File([Array.isArray(blob) ? blob[0] : blob], 'photo.jpg', { type: 'image/jpeg' }));
+  return loadHeicTo().then(() => window.HeicTo({ blob: file, type: 'image/jpeg', quality: 0.9 })).then(asJpeg)
+    .catch(e1 => { console.warn('heic-to แปลงไม่สำเร็จ', e1); return loadHeic2any().then(() => window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })).then(asJpeg); })
+    .catch(e2 => { console.warn('heic2any แปลงไม่สำเร็จ', e2); throw e2; });
 }
 // ย่อด้านยาวสุดไม่เกิน MAX_SIDE แล้วบีบเป็น JPEG จนขนาดไม่เกิน MAX_DATAURL
 function compress(file) {
