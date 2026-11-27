@@ -43,7 +43,9 @@ let IMGS = {};                // id → [dataURL]  (ของคนที่แ�
 let form = null;              // ฟอร์มที่เปิดอยู่ { id?, kind, images: [dataURL] }
 
 const esc = s => opts.esc(s == null ? '' : s);
-const todayIso = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+// วันที่/เวลาเป็นเวลาไทยเสมอ (เครื่องที่ตั้งโซนเวลาอื่นก็แสดงตรงกัน)
+const TZ = 'Asia/Bangkok';
+const todayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
 const dmy = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '';
 function parseDmy(s) {   // DD/MM/YYYY (รับปี พ.ศ.) → ISO หรือ ''
   const m = String(s || '').trim().match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/); if (!m) return '';
@@ -51,8 +53,8 @@ function parseDmy(s) {   // DD/MM/YYYY (รับปี พ.ศ.) → ISO หร
   const t = new Date(Date.UTC(y, mo - 1, d));
   return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d ? t.toISOString().slice(0, 10) : '';
 }
-const whenTxt = ms => { if (!ms) return ''; const t = new Date(ms); return `${dmy(todayIsoOf(t))} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`; };
-const todayIsoOf = t => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+const whenTxt = ms => { if (!ms) return ''; const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`; };
 
 // คีย์ของคน: ประเภท + ชื่อ (ไม่รวมกะ เพราะย้ายกะได้) · ตัดช่องว่างซ้ำ และอักขระที่ Firebase ห้ามใช้ในคีย์
 const key = d => `${d.group || 'TPT'}|${String(d.name || '').replace(/\s+/g, ' ').trim()}`.replace(/[.#$\[\]\/\x00-\x1f\x7f]/g, '_').slice(0, 120);
@@ -340,5 +342,5 @@ function view(src) {
   if (viewer.showModal) viewer.showModal(); else viewer.setAttribute('open', '');
 }
 
-window.BPNotes = { init, key, latest, list, badge, summary, mount, KINDS, get state() { return state; }, get editor() { return isEditor; } };
+window.BPNotes = { init, key, latest, list, badge, summary, mount, KINDS, when: whenTxt, get state() { return state; }, get editor() { return isEditor; } };
 })();
