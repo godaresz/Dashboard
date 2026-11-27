@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- มีชื่อ + ข้อมูลสุขภาพ: ขอไม่ให้เครื่องมือค้นหาเก็บ/แสดงหน้านี้ (ไม่ได้ทำให้เป็นความลับ — ใครมีลิงก์ยังเปิดได้) -->
+<meta name="robots" content="noindex, nofollow, noarchive, noimageindex">
 <title>Dashboard ความดัน พขร.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -109,7 +111,28 @@ select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px
 .al-item.stop{background:var(--crit-bg)}
 .new{display:inline-block;background:#1d5fb8;color:#fff;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:1px}
 .al-ok{color:var(--good-ink);font-weight:600}
-.al-sum{display:flex;flex-wrap:wrap;gap:6px}
+.al-sum{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--text-2)}
+.al-sum .pend{font-weight:700;color:#9d1c12}
+.al-sum .lnk{font:inherit;font-size:13px;border:0;background:none;color:var(--accent);cursor:pointer;padding:4px 2px;text-decoration:underline;min-height:32px}
+.al-allok{font-size:14px;color:var(--text-2);padding:6px 2px}
+.month-sel{width:auto;min-width:0;max-width:170px;font:inherit;font-size:14px;font-weight:600;padding:6px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-height:38px}
+.stale{margin:0 0 14px;padding:12px 16px;border-radius:12px;background:#fff4d6;border:1px solid #f0c24b;color:#4a3500;font-size:14px;line-height:1.5}
+.stale b{color:#2e2100}
+.appt .ap-list{display:flex;flex-wrap:wrap;gap:8px}
+.appt .ap-h{font-size:13px;font-weight:700;margin:8px 0 6px;color:var(--text-2)}
+.ap-item{font:inherit;text-align:left;cursor:pointer;border:1px solid var(--border);border-left:4px solid #1d5fb8;border-radius:10px;background:var(--surface);color:var(--text);padding:8px 12px;display:flex;flex-direction:column;gap:2px;min-height:44px}
+.ap-item.over{border-left-color:#c62828}
+.ap-item .d{font-weight:700}.ap-item.over .d{color:#b42318}
+.ap-item .m{font-size:12.5px;color:var(--text-2)}
+.pk-prev{display:block;margin-top:2px}
+:root[data-theme="dark"] .stale{background:#3a2e0b;border-color:#8a6d1c;color:#f7e3a8}
+:root[data-theme="dark"] .stale b{color:#fff3cf}
+:root[data-theme="dark"] .al-sum .pend,:root[data-theme="dark"] .ap-item.over .d{color:#ffb4a8}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .stale{background:#3a2e0b;border-color:#8a6d1c;color:#f7e3a8}
+  :root:not([data-theme="light"]) .stale b{color:#fff3cf}
+  :root:not([data-theme="light"]) .al-sum .pend,:root:not([data-theme="light"]) .ap-item.over .d{color:#ffb4a8}
+}
 @keyframes flash{0%{box-shadow:0 0 0 0 rgba(201,42,42,.6)}100%{box-shadow:0 0 0 14px rgba(201,42,42,0)}}
 .flash{animation:flash 1s ease-out 3}
 .al-group{border-left:5px solid var(--text-3);background:var(--surface-2);border-radius:10px;padding:10px 12px;margin-bottom:10px}
@@ -431,7 +454,10 @@ tbody tr.click{transition:background .15s}
     </div>
   </header>
 
+  <div class="stale hidden" id="staleBar" role="status"></div>
+
   <div class="filters">
+    <div class="fgroup" id="monthWrap"><label class="flbl" for="monthSel">เดือน</label><select id="monthSel" class="month-sel"></select></div>
     <div class="fgroup hidden" id="groupWrap"><span class="flbl" id="groupLbl">ประเภท</span><div class="seg" id="groupSeg" role="group" aria-labelledby="groupLbl"></div></div>
     <div class="fgroup"><span class="flbl" id="shiftLbl">กะ</span><div class="seg" id="shiftSeg" role="group" aria-labelledby="shiftLbl"><button data-v="ALL" class="on" aria-pressed="true">ทั้งหมด</button></div></div>
     <div class="search" role="combobox" aria-expanded="false" aria-haspopup="listbox" id="searchBox">
@@ -464,6 +490,11 @@ tbody tr.click{transition:background .15s}
         <button class="lnk hidden" id="notifyBtn" type="button">🔔 เปิดการแจ้งเตือนบนเครื่องนี้</button>
       </div>
       <div id="alertBody"></div>
+    </div>
+    <div class="card appt hidden" id="apptCard">
+      <h2>📅 นัดพบแพทย์</h2>
+      <div class="desc">จากหมายเหตุ "รอพบแพทย์ตามใบนัด" ล่าสุดของแต่ละคน — เลยวันนัดแล้ว และนัดภายใน 7 วันข้างหน้า</div>
+      <div id="apptBody"></div>
     </div>
     <div class="filter-note hidden" id="filterNote"></div>
     <div id="ovKpis"></div>
@@ -524,6 +555,7 @@ tbody tr.click{transition:background .15s}
             <option value="raw">รายการวัดทั้งหมด (ทุกครั้ง)</option>
             <option value="group">สรุปตามประเภท / กะ</option>
             <option value="daily">สรุปรายวัน</option>
+            <option value="notes">ประวัติการติดตาม (หมายเหตุ)</option>
           </select>
         </label>
         <label>ประเภท <select id="exGroup"></select></label>
@@ -648,6 +680,20 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 let DATA = null, shift = 'ALL', personId = null;
+// ข้อมูลหลายเดือน: RAW = data.json ดิบ · FULL = ทุกเดือน (ใช้แจ้งเตือนของใหม่ / เทียบเดือนก่อน / นัดพบแพทย์) · DATA = เดือนที่เลือก
+let RAW = null, FULL = null, month = null, monthsAll = [];
+const clone = o => JSON.parse(JSON.stringify(o));
+const TH_TODAY = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());   // YYYY-MM-DD เวลาไทย
+const monthLabel = m => m === 'ALL' ? 'ทุกเดือน (รวม)' : `${TH_MONTH[+m.slice(5, 7) - 1]} ${+m.slice(0, 4) + 543}`;
+function sliceMonth(raw, m) {
+  const c = clone(raw);
+  if (m === 'ALL') return c;
+  // แสดงเฉพาะคนที่มีผลวัดในเดือนนี้ · คนที่อยู่ในไฟล์แต่ยังไม่เคยมีผลวัดเลย แสดงเฉพาะเดือนล่าสุด (ไม่ไปโผล่ในเดือนเก่า)
+  const latest = monthsAll[monthsAll.length - 1];
+  c.drivers.forEach(d => { d._had = d.readings.length > 0; d.readings = d.readings.filter(r => r.date.startsWith(m)); });
+  c.drivers = c.drivers.filter(d => d.readings.length || (!d._had && m === latest));
+  return c;
+}
 const charts = {};
 const $ = id => document.getElementById(id);
 
@@ -964,6 +1010,16 @@ document.addEventListener('mousemove', e => {
 });
 
 // ================= PERSON =================
+// เทียบค่าเฉลี่ยกับเดือนก่อน (ของคนเดียวกัน) — แสดงใต้ "ความดันเฉลี่ย"
+function prevMonthTxt(d) {
+  if (!FULL || month === 'ALL') return '';
+  const i = monthsAll.indexOf(month); if (i < 1) return '';
+  const pm = monthsAll[i - 1], f = FULL.drivers.find(x => x.id === d.id); if (!f) return '';
+  const rs = f.all.filter(r => r.date.startsWith(pm)); if (!rs.length) return '';
+  const S = avg(rs.map(r => r.sys).filter(Boolean)), D = avg(rs.map(r => r.dia).filter(Boolean));
+  const arrow = (a, b) => a == null || b == null ? '' : Math.round(a) > Math.round(b) ? ' ▲' : Math.round(a) < Math.round(b) ? ' ▼' : ' =';
+  return `<span class="pk-prev">เดือนก่อน (${monthLabel(pm)}) ${r0(S)}/${r0(D)} · เดือนนี้${arrow(d.avgSys, S)}${arrow(d.avgDia, D)}</span>`;
+}
 function renderPerson() {
   const d = DATA.drivers.find(x => x.id === personId);
   if (!d) return;
@@ -982,7 +1038,7 @@ function renderPerson() {
     adv.classList.remove('hidden');
   } else adv.classList.add('hidden');
   $('pKpis').innerHTML = [
-    ['ความดันเฉลี่ย', `${r0(d.avgSys)}/${r0(d.avgDia)}`, 'mmHg', STATUS[d.avgSt].label],
+    ['ความดันเฉลี่ย', `${r0(d.avgSys)}/${r0(d.avgDia)}`, 'mmHg', STATUS[d.avgSt].label + prevMonthTxt(d)],
     ['ผลวันล่าสุด', d.last ? `${d.last.sys ?? '–'}/${d.last.dia ?? '–'}` : '–', 'mmHg', d.last ? dLong(d.last.date) + periodTxt(d.last) + (d.last.periods && d.last.periods.length > 1 ? ' · ค่าที่สูงกว่าของวัน' : '') : ''],
     ['สูงสุด (บน/ล่าง)', `${d.maxSys ?? '–'}/${d.maxDia ?? '–'}`, 'mmHg', 'ค่าสูงสุดของแต่ละตัว'],
     ['ครั้งที่เกินเกณฑ์ (≥140/90)', d.nHigh, `/ ${d.n} ครั้ง`, `สูงปานกลาง ${d.all.filter(r=>r.st==='l5').length} · สูงมาก ${d.nStop} · ต่ำ ${d.nLow}`],
@@ -1078,15 +1134,22 @@ function renderAlerts() {
   const card = $('alertCard');
   card.classList.toggle('ok', items.length === 0);
   $('alertTitle').textContent = items.length ? `🚨 ต้องติดตาม ${items.length} คน` : '✅ ไม่มีผู้ที่ต้องติดตาม';
-  const cnt = k => items.filter(x => x.r.st === k).length;
-  $('alertSum').innerHTML = '';
+  const cnt = k => shown.filter(x => x.r.st === k).length;
+  // สรุปการติดตาม: มีหมายเหตุภายใน 30 วัน = ติดตามแล้ว · กดดูเฉพาะคนที่ยังไม่มีการติดตาม
+  const ready = window.BPNotes && BPNotes.state === 'ready';
+  const nFol = ready ? items.filter(x => followed(x.d)).length : 0;
+  if (!ready || !items.length) alertPending = false;
+  const shown = alertPending ? items.filter(x => !followed(x.d)) : items;
+  $('alertSum').innerHTML = ready && items.length ? `<span>ติดตามแล้ว ${nFol}</span><span>·</span><span class="pend">ยังไม่มีการติดตาม ${items.length - nFol}</span>
+    <button type="button" class="lnk" id="alPend" aria-pressed="${alertPending}">${alertPending ? 'แสดงทั้งหมด' : 'ดูเฉพาะที่ยังไม่ติดตาม'}</button>` : '';
+  const ap = $('alPend'); if (ap) ap.onclick = () => { alertPending = !alertPending; renderAlerts(); const b = $('alPend'); if (b) b.focus(); };
   // จัดกลุ่มตามระดับ: วิธีปฏิบัติแสดงครั้งเดียวต่อกลุ่ม แล้วตามด้วยรายชื่อแบบย่อ (ไม่ซ้ำข้อความยาว)
-  $('alertBody').innerHTML = items.length
+  $('alertBody').innerHTML = alertPending && !shown.length ? `<div class="al-allok">✅ ทุกคนในรายการนี้มีการติดตามแล้ว (มีหมายเหตุภายใน 30 วัน)</div>` : items.length
     ? ['l6', 'l5', 'l4'].filter(k => cnt(k)).map(k => {
         const L = LV[k];
         return `<div class="al-group${k === 'l6' ? ' stop' : ''}" style="border-left-color:${L.bg}">
           <div class="al-ghead">${chip(k)}<span class="n">${cnt(k)} คน</span><span class="act">${esc(L.act)}</span></div>
-          <div class="al-names">${items.filter(x => x.r.st === k).map(({ d, r }) =>
+          <div class="al-names">${shown.filter(x => x.r.st === k).map(({ d, r }) =>
             `<button class="al-item al-name" data-id="${d.id}" type="button" title="ชีพจร ${r.pulse ?? '–'} · คลิกเพื่อดูประวัติ">
               <span>${esc(d.name)}${NB(d)}</span><span class="v">${r.sys ?? '–'}/${r.dia ?? '–'}${r.period ? ` <small>${esc(r.period)}</small>` : ''}</span><span class="m">${esc(tag(d))} · กะ ${esc(d.shift)}${!date && new Set(Object.values(LG)).size > 1 ? ' · ' + dShort(r.date) : ''}</span>${newKeys.has(alertKey(d, r)) ? '<span class="new">ใหม่</span>' : ''}</button>`).join('')}</div></div>`;
       }).join('')
@@ -1118,7 +1181,7 @@ function setFavicon(color, n) {
 // เทียบกับที่เคยเห็นบนเครื่องนี้ -> ติดป้าย "ใหม่" และเด้งแจ้งเตือน
 function checkNewAlerts(isFirst) {
   const all = [];
-  DATA.drivers.forEach(d => d.readings.forEach(r => { if (LV[r.st].over) all.push({ d, r, k: alertKey(d, r) }); }));
+  (FULL || DATA).drivers.forEach(d => d.readings.forEach(r => { if (LV[r.st].over) all.push({ d, r, k: alertKey(d, r) }); }));
   const seen = loadSeen();
   if (seen === null) { newKeys = new Set(); return; }          // ใช้ localStorage ไม่ได้
   if (seen.size === 0 && isFirst) { saveSeen(all.map(x => x.k)); newKeys = new Set(); return; } // เปิดครั้งแรก: ไม่ถือว่าใหม่
@@ -1184,9 +1247,7 @@ function exInit() {
   const opt = (v, t) => `<option value="${esc(v)}">${esc(t)}</option>`;
   $('exGroup').innerHTML = opt('ALL', 'ทั้งหมด') + DATA.groups.map(g => opt(g, g)).join('');
   $('exShift').innerHTML = opt('ALL', 'ทั้งหมด') + DATA.shifts.map(v => opt(v, v === '-' ? 'ไม่ระบุ' : 'กะ ' + v)).join('');
-  const d0 = DATA.dates[0], d1 = DATA.dates[DATA.dates.length - 1];
-  ['exFrom', 'exTo'].forEach(id => { const n = document.querySelector(`.ex-native[data-for="${id}"]`); n.min = d0; n.max = d1; });
-  exSetDate('exFrom', d0); exSetDate('exTo', d1);
+  exRefresh(true);
   document.querySelectorAll('.ex-cal').forEach(b => b.onclick = () => {
     const n = document.querySelector(`.ex-native[data-for="${b.dataset.for}"]`); n.value = exDate(b.dataset.for) || '';
     try { n.showPicker(); } catch (e) { n.focus(); n.click(); }
@@ -1198,8 +1259,6 @@ function exInit() {
   });
   exRenderSources();
   $('exGroup').value = group; $('exShift').value = DATA.shifts.includes(shift) ? shift : 'ALL';
-  $('exPeople').innerHTML = DATA.drivers.slice().sort((a, b) => a.name.localeCompare(b.name, 'th'))
-    .map(d => `<option value="${esc(d.name)} (${esc(tag(d))})"></option>`).join('');
   const presets = [
     ['👤 สรุปรายบุคคล TPT', { type: 'person', group: 'TPT' }],
     ['👤 สรุปรายบุคคล Forklift', { type: 'person', group: 'Forklift' }],
@@ -1208,12 +1267,15 @@ function exInit() {
     ['⛔ พบแพทย์ / งดขับ', { type: 'raw', level: 'severe', group: 'ALL' }],
     ['📈 คนที่ค่าเฉลี่ยเกินเกณฑ์', { type: 'person', level: 'avgOver', group: 'ALL' }],
     ['📅 สรุปรายวัน', { type: 'daily', group: 'ALL' }],
+    ['📝 ประวัติการติดตาม (หมายเหตุ)', { type: 'notes', group: 'ALL' }],
   ].filter(([, p]) => p.group === 'ALL' || DATA.groups.includes(p.group));
   $('exPresets').innerHTML = presets.map(([t], i) => `<button type="button" data-i="${i}">${esc(t)}</button>`).join('');
   $('exPresets').querySelectorAll('button').forEach(b => b.onclick = () => {
     const p = presets[+b.dataset.i][1];
     $('exType').value = p.type; $('exGroup').value = p.group || 'ALL'; $('exShift').value = 'ALL'; $('exPerson').value = '';
-    $('exPeriod').value = 'ALL'; exSetDate('exFrom', d0); exSetDate('exTo', d1); EX.swapped = false;
+    $('exPeriod').value = 'ALL'; EX.swapped = false;
+    if (p.type === 'notes') { const r = notesRange(); exSetDate('exFrom', r[0]); exSetDate('exTo', r[1]); }
+    else { exSetDate('exFrom', DATA.dates[0]); exSetDate('exTo', DATA.dates[DATA.dates.length - 1]); }
     exSyncControls(); if (p.level) $('exLevel').value = p.level; if (p.by) $('exBy').value = p.by;
     exBuild();
   });
@@ -1222,6 +1284,21 @@ function exInit() {
   $('exPerson').addEventListener('input', exBuild);
   $('exXlsx').onclick = exXlsx; $('exCsv').onclick = exCsv; $('exPrint').onclick = exPrint;
   exSyncControls();
+}
+// เปลี่ยนเดือน / ข้อมูลใหม่: ช่วงวันที่ + รายชื่อพนักงานตามเดือนที่เลือก (ตัวจัดการเหตุการณ์ผูกครั้งเดียวใน exInit)
+function exRefresh(initial) {
+  const d0 = DATA.dates[0], d1 = DATA.dates[DATA.dates.length - 1];
+  ['exFrom', 'exTo'].forEach(id => { const n = document.querySelector(`.ex-native[data-for="${id}"]`); n.min = exVal('exType') === 'notes' ? '' : d0; n.max = exVal('exType') === 'notes' ? '' : d1; });
+  if (initial || exVal('exType') !== 'notes') { exSetDate('exFrom', d0); exSetDate('exTo', d1); EX.swapped = false; }
+  $('exPeople').innerHTML = DATA.drivers.slice().sort((a, b) => a.name.localeCompare(b.name, 'th'))
+    .map(d => `<option value="${esc(d.name)} (${esc(tag(d))})"></option>`).join('');
+  if (!initial && tab === 'export') exBuild();
+}
+// ช่วงวันที่ของรายงานหมายเหตุ: ตั้งแต่หมายเหตุแรก (หรือวันแรกของข้อมูล) ถึงวันนี้
+function notesRange() {
+  let first = FULL.dates[0] || TH_TODAY();
+  if (window.BPNotes && BPNotes.state === 'ready') FULL.drivers.forEach(d => BPNotes.list(d).forEach(n => { if (n.date && n.date < first) first = n.date; }));
+  return [first, TH_TODAY()];
 }
 // เงื่อนไขที่ใช้ได้ต่างกันตามรูปแบบรายงาน
 function exSyncControls() {
@@ -1232,7 +1309,8 @@ function exSyncControls() {
   if (lv) $('exLevel').innerHTML = lv.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
   $('exByWrap').classList.toggle('hidden', t !== 'group');
   $('exPersonWrap').classList.toggle('hidden', t === 'group' || t === 'daily');
-  $('exPeriodWrap').classList.toggle('hidden', !DATA.drivers.some(d => d.hasPeriods));
+  $('exPeriodWrap').classList.toggle('hidden', t === 'notes' || !DATA.drivers.some(d => d.hasPeriods));
+  ['exFrom', 'exTo'].forEach(id => { const n = document.querySelector(`.ex-native[data-for="${id}"]`); n.min = t === 'notes' ? '' : DATA.dates[0]; n.max = t === 'notes' ? '' : DATA.dates[DATA.dates.length - 1]; });
 }
 function exOpen() { exInit(); exBuild(); }
 
@@ -1306,16 +1384,34 @@ function exBuild() {
         w.filter(r => r.st === 'low').length, pct(over, w.length), r1(avg(w.map(r => r.sys).filter(Boolean))), r1(avg(w.map(r => r.dia).filter(Boolean)))]);
     });
   }
+  if (t === 'notes') {
+    title = 'ประวัติการติดตาม (หมายเหตุ)';
+    head = ['วันที่บันทึก', 'ชื่อ – สกุล', 'ประเภท', 'ทะเบียน', 'กะ', 'สถานะ', 'วันนัดพบแพทย์', 'รายละเอียด', 'ภาพแนบ', 'บันทึกโดย', 'เวลาบันทึก', 'แก้ไขล่าสุด'];
+    if (!window.BPNotes || BPNotes.state !== 'ready') { EX.notesNote = 'ระบบหมายเหตุยังไม่พร้อม (เชื่อมต่อฐานข้อมูลไม่ได้)'; }
+    else {
+      EX.notesNote = '';
+      // หมายเหตุผูกกับคน (ไม่ผูกเดือน) → ค้นจากทุกเดือน · คนเดียวกันหลายกะใช้หมายเหตุชุดเดียว (ไม่ซ้ำ)
+      const g = exVal('exGroup'), sh = exVal('exShift'), q = norm((exVal('exPerson') || '').replace(/\s*\(.*\)\s*$/, '')), seen = new Set();
+      FULL.drivers.filter(d => (g === 'ALL' || d.group === g) && (sh === 'ALL' || d.shift === sh) && (!q || matches(d, q))).forEach(d => {
+        const k = BPNotes.key(d); if (seen.has(k)) return; seen.add(k);
+        BPNotes.list(d).filter(n => n.date >= from && n.date <= to).forEach(n => {
+          const K = BPNotes.KINDS.find(x => x.k === n.kind) || BPNotes.KINDS[BPNotes.KINDS.length - 1];
+          rows.push([n.date, d.name, d.group, d.plate || '', d.shift, K.label, n.appt || '', n.text || '', n.images || 0, n.by || '', BPNotes.when(n.at), n.editedAt ? `${BPNotes.when(n.editedAt)}${n.editedBy ? ' โดย ' + n.editedBy : ''}` : '']);
+        });
+      });
+      rows.sort((a, b) => b[0].localeCompare(a[0]) || a[1].localeCompare(b[1], 'th'));
+    }
+  }
   const cond = [`ประเภท: ${exVal('exGroup') === 'ALL' ? 'ทั้งหมด' : exVal('exGroup')}`, `กะ: ${exVal('exShift') === 'ALL' ? 'ทั้งหมด' : exVal('exShift')}`, `ช่วง: ${dmy(from)} – ${dmy(to)}`]
     .concat(!$('exPeriodWrap').classList.contains('hidden') && exVal('exPeriod') !== 'ALL' ? [`ช่วงเวลา: ${exVal('exPeriod')}`] : [])
     .concat(!$('exLevelWrap').classList.contains('hidden') ? [`เงื่อนไข: ${$('exLevel').selectedOptions[0].textContent}`] : [])
     .concat(!$('exPersonWrap').classList.contains('hidden') && exVal('exPerson') ? [`พนักงาน: ${exVal('exPerson')}`] : []);
-  const dcols = { raw: [0], person: [15], daily: [0] }[t] || [];   // คอลัมน์วันที่ (เก็บเป็น ISO ไว้เรียง แสดง/ส่งออกเป็น DD/MM/YYYY)
+  const dcols = { raw: [0], person: [15], daily: [0], notes: [0, 6] }[t] || [];   // คอลัมน์วันที่ (เก็บเป็น ISO ไว้เรียง แสดง/ส่งออกเป็น DD/MM/YYYY)
   EX.last = { title, head, rows, cond, from, to, type: t, dcols };
   const MAXP = 300;
   $('exTable').innerHTML = `<thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
     (rows.length ? rows.slice(0, MAXP).map(r => `<tr>${r.map((c, i) => `<td class="${typeof c === 'number' ? 'num' : ''}">${dcols.includes(i) ? dmy(c) : esc(c)}</td>`).join('')}</tr>`).join('')
-      : `<tr><td colspan="${head.length}" class="empty">ไม่มีข้อมูลตามเงื่อนไขนี้</td></tr>`) + '</tbody>';
+      : `<tr><td colspan="${head.length}" class="empty">${t === 'notes' && EX.notesNote ? esc(EX.notesNote) : 'ไม่มีข้อมูลตามเงื่อนไขนี้'}</td></tr>`) + '</tbody>';
   $('exCount').innerHTML = `<b>${title}</b> · ${rows.length.toLocaleString('th-TH')} แถว`;
   $('exNote').textContent = (EX.swapped ? '↔ สลับวันที่ให้แล้ว ("ตั้งแต่" ต้องมาก่อน "ถึง") · ' : '') + (rows.length > MAXP ? `แสดงตัวอย่าง ${MAXP} แถวแรก — ไฟล์ที่ดาวน์โหลดมีครบ ${rows.length.toLocaleString('th-TH')} แถว · ` : '') + 'เงื่อนไข: ' + cond.join(' · ');
   ['exXlsx', 'exCsv', 'exPrint'].forEach(id => $(id).disabled = !rows.length);
@@ -1356,7 +1452,7 @@ function personShot() {
 }
 // ชื่อไฟล์เป็นภาษาอังกฤษ: บางเบราว์เซอร์ตัดตัวอักษรไทยในชื่อไฟล์ดาวน์โหลดทิ้ง (เหลือแค่ "download")
 const exFileName = ext => { const L = EX.last, g = exVal('exGroup'), sh = exVal('exShift');
-  const kind = { raw: 'readings', person: 'person-summary', group: 'group-summary', daily: 'daily-summary' }[L.type] || 'report';
+  const kind = { raw: 'readings', person: 'person-summary', group: 'group-summary', daily: 'daily-summary', notes: 'follow-up-notes' }[L.type] || 'report';
   const part = v => String(v).replace(/[^A-Za-z0-9-]+/g, '');
   return ['BP', kind, g !== 'ALL' ? part(g) : '', sh !== 'ALL' ? 'shift' + part(sh) : '', L.from, 'to', L.to].filter(Boolean).join('_') + '.' + ext; };
 function exDownload(blob, name) {
@@ -1470,7 +1566,7 @@ function render() {
   $('overview').classList.toggle('hidden', !!personId);
   $('person').classList.toggle('hidden', !personId);
   $('clearBtn').classList.toggle('hidden', !personId);
-  renderAlerts();
+  renderAlerts(); renderAppts();
   if (personId) renderPerson(); else renderOverview();
 }
 
@@ -1533,24 +1629,84 @@ $('critTable').innerHTML = `<thead><tr><th>ระดับความดัน<
 
 // ---- load data + auto refresh every 5 min
 const REFRESH_MS = 5 * 60 * 1000;
-// หมายเหตุเปลี่ยน (realtime) → วาดใหม่เฉพาะส่วนที่มีป้าย ไม่วาดกราฟใหม่
-function refreshNotes() {
-  if (!DATA) return;
-  renderAlerts();
-  if (!personId) renderTable(visible());
-  if (tab === 'export' && EX.inited) exBuild();
-}
-function applyData(data, first) {
-  DATA = enrich(data);
-  if (first) requestAnimationFrame(() => { playIn(document.body, 2000); countUp($('ovKpis')); countUp($('pKpis')); moveTabInk(); });
-  buildFilters();
-  checkNewAlerts(first);
-  if (first && window.BPNotes) BPNotes.init({ esc, onChange: refreshNotes });
+function updateHeaderText() {
   const f = DATA.dates[0], l = DATA.dates[DATA.dates.length-1];
   $('period').textContent = f ? `ช่วงข้อมูล ${dLong(f)} – ${dLong(l)} · ${DATA.groups.map(g => `${g} ${DATA.drivers.filter(d => d.group === g).length} คน`).join(' · ')}` : 'ยังไม่มีข้อมูล';
   const g = new Date(DATA.generatedAt);
   $('liveNote').innerHTML = `<i></i> ข้อมูลอัปเดตล่าสุด ${g.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} · หน้านี้รีเฟรชข้อมูลอัตโนมัติทุก 5 นาที`;
   $('foot').textContent = `แหล่งข้อมูล: ${DATA.sources.join(', ')} · เกณฑ์อ้างอิง: โรงพยาบาลศิริราชปิยมหาราชการุณย์ / องค์การอนามัยโลก (WHO)` + (isStamped ? ` · เวอร์ชัน ${BUILD.slice(0, 7)}` : '');
+}
+function renderMonthSel() {
+  const sel = $('monthSel');
+  const opts = monthsAll.slice().reverse().concat(monthsAll.length > 1 ? ['ALL'] : []);
+  sel.innerHTML = opts.map(m => `<option value="${m}">${monthLabel(m)}${m === monthsAll[monthsAll.length - 1] ? ' · ล่าสุด' : ''}</option>`).join('');
+  sel.value = month;
+}
+function setMonth(m) {
+  month = m; DATA = enrich(sliceMonth(RAW, m));
+  if (personId && !DATA.drivers.some(d => d.id === personId)) { personId = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+  buildFilters(); updateHeaderText();
+  if (EX.inited) exRefresh();
+  fillSelect(); render();
+}
+$('monthSel').onchange = e => setMonth(e.target.value);
+// ข้อมูลไม่อัปเดต: ไม่มีผลวัดใหม่ ≥ 2 วันทำงาน (จ.–ส.) ก่อนวันนี้ → เตือน (เครื่องซิงก์ปิด / ยังไม่ลงข้อมูล)
+function renderStale() {
+  const bar = $('staleBar'), last = FULL.dates[FULL.dates.length - 1];
+  if (!last) { bar.classList.add('hidden'); return; }
+  const today = TH_TODAY(); let gap = 0;
+  for (let t = new Date(last + 'T00:00:00Z'); ; ) { t.setUTCDate(t.getUTCDate() + 1); const iso = t.toISOString().slice(0, 10); if (iso >= today) break; if (t.getUTCDay() !== 0) gap++; }
+  const sf = (RAW.sourceFiles || [])[0];
+  let saved = '';
+  if (sf && sf.modified) { const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(sf.modified)).map(x => [x.type, x.value])); saved = ` · ไฟล์ Excel บันทึกล่าสุด ${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute} น.`; }
+  bar.classList.toggle('hidden', gap < 2);
+  if (gap >= 2) bar.innerHTML = `⚠️ <b>ข้อมูลอาจไม่อัปเดต</b> — ยังไม่มีผลวัดใหม่ตั้งแต่ ${esc(dLong(last))} (ขาดไป ${gap} วันทำงาน)${esc(saved)}<br>ตรวจว่ามีการลงข้อมูลใน Excel และเครื่องที่รันซิงก์ (auto-sync.bat) ยังเปิดอยู่`;
+}
+// ติดตามแล้ว = มีหมายเหตุภายใน 30 วันล่าสุด
+const followed = d => { if (!window.BPNotes || BPNotes.state !== 'ready') return false; const n = BPNotes.latest(d); if (!n) return false;
+  const t = new Date(TH_TODAY() + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - 30); return n.date >= t.toISOString().slice(0, 10); };
+let alertPending = false;
+// นัดพบแพทย์จากหมายเหตุล่าสุด: เลยวันนัด + ภายใน 7 วัน (ตามตัวกรองประเภท/กะ)
+function renderAppts() {
+  const card = $('apptCard');
+  if (!window.BPNotes || BPNotes.state !== 'ready' || !FULL) { card.classList.add('hidden'); return; }
+  const today = TH_TODAY(), t7 = new Date(today + 'T00:00:00Z'); t7.setUTCDate(t7.getUTCDate() + 7); const lim = t7.toISOString().slice(0, 10);
+  const seen = new Set(), list = [];
+  FULL.drivers.filter(d => (group === 'ALL' || d.group === group) && (shift === 'ALL' || d.shift === shift)).forEach(d => {
+    const k = BPNotes.key(d); if (seen.has(k)) return; seen.add(k);
+    const n = BPNotes.latest(d); if (n && n.kind === 'appt' && n.appt && n.appt <= lim) list.push({ d, n, over: n.appt < today });
+  });
+  card.classList.toggle('hidden', !list.length);
+  if (!list.length) return;
+  list.sort((a, b) => a.n.appt.localeCompare(b.n.appt));
+  const item = ({ d, n, over }) => `<button type="button" class="ap-item${over ? ' over' : ''}" data-id="${d.id}"><span class="d">${esc(d.name)}</span>
+    <span class="m">${over ? 'เลยวันนัด' : 'นัด'} ${esc(dLong(n.appt))}${n.text ? ' · ' + esc(n.text.slice(0, 40)) : ''}</span><span class="m">${esc(tag(d))} · กะ ${esc(d.shift)}</span></button>`;
+  const over = list.filter(x => x.over), soon = list.filter(x => !x.over);
+  $('apptBody').innerHTML = (over.length ? `<div class="ap-h">⚠️ เลยวันนัดแล้ว ${over.length} คน — ตรวจว่าไปพบแพทย์แล้วหรือยัง แล้วอัปเดตหมายเหตุ</div><div class="ap-list">${over.map(item).join('')}</div>` : '')
+    + (soon.length ? `<div class="ap-h">นัดภายใน 7 วัน ${soon.length} คน</div><div class="ap-list">${soon.map(item).join('')}</div>` : '');
+  $('apptBody').querySelectorAll('.ap-item').forEach(b => b.onclick = () => { const id = +b.dataset.id; if (!DATA.drivers.some(x => x.id === id)) setMonth('ALL'); selectPerson(id); });
+}
+// หมายเหตุเปลี่ยน (realtime) → วาดใหม่เฉพาะส่วนที่มีป้าย ไม่วาดกราฟใหม่
+function refreshNotes() {
+  if (!DATA) return;
+  renderAlerts(); renderAppts();
+  if (!personId) renderTable(visible());
+  if (tab === 'export' && EX.inited) exBuild();
+}
+function applyData(data, first) {
+  RAW = data; FULL = enrich(clone(data));
+  const prevMonths = monthsAll;
+  monthsAll = [...new Set(FULL.dates.map(x => x.slice(0, 7)))];
+  // เดือนเริ่มต้น = ล่าสุด · ถ้าดูเดือนล่าสุดอยู่แล้วมีเดือนใหม่เข้ามา → เลื่อนไปเดือนใหม่ให้
+  if (!month || (month !== 'ALL' && !monthsAll.includes(month)) || (month === prevMonths[prevMonths.length - 1] && month !== monthsAll[monthsAll.length - 1])) month = monthsAll[monthsAll.length - 1] || 'ALL';
+  DATA = enrich(sliceMonth(data, month));
+  renderMonthSel(); renderStale();
+  if (first) requestAnimationFrame(() => { playIn(document.body, 2000); countUp($('ovKpis')); countUp($('pKpis')); moveTabInk(); });
+  buildFilters();
+  checkNewAlerts(first);
+  if (EX.inited) exRefresh();
+  if (first && window.BPNotes) BPNotes.init({ esc, onChange: refreshNotes });
+  updateHeaderText();
   if (first) {
     const m = location.hash.match(/^#p(\d+)$/);
     if (m && DATA.drivers.some(d => d.id === +m[1])) { selectPerson(+m[1]); return; }
