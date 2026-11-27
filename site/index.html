@@ -203,6 +203,14 @@ tbody tr.click:hover,#ovTable tbody tr.click:hover td:first-child{background:var
 .person-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:12px}
 .person-head .nm{font-size:22px;font-weight:700}
 .person-head .meta{color:var(--text-2);font-size:14px}
+.btn-shot{margin-left:auto;font:inherit;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:10px;padding:8px 14px;min-height:40px}
+.btn-shot:hover{background:var(--border)}
+.btn-shot:disabled{opacity:.6;cursor:progress}
+/* ตอนบันทึกภาพ (ใช้กับสำเนาของหน้าใน html2canvas): ซ่อนปุ่ม แสดงตารางเต็ม ไม่มีแอนิเมชัน */
+#person.shot *{animation:none!important;transition:none!important}
+#person.shot .btn-shot,#person.shot .nt-acts,#person.shot [data-r="auth"],#person.shot [data-r="form"],#person.shot .nt-flash{display:none!important}
+#person.shot .tbl-wrap{max-height:none!important;overflow:visible!important}
+.shot-foot{margin-top:6px;padding:10px 12px 4px;font-size:13px;color:var(--text-2);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .hidden{display:none!important}
 .tip{position:fixed;pointer-events:none;background:var(--text);color:var(--surface);font-size:12.5px;padding:6px 9px;border-radius:6px;z-index:50;white-space:nowrap}
 footer{color:var(--text-3);font-size:12.5px;margin-top:8px}
@@ -558,6 +566,7 @@ tbody tr.click{transition:background .15s}
         <div class="nm" id="pName"></div>
         <div class="meta" id="pMeta"></div>
         <span id="pChip"></span>
+        <button class="btn-shot" id="pShot" type="button" title="บันทึกหน้านี้เป็นไฟล์ภาพ (PNG) ส่งต่อทางไลน์/อีเมลได้">📷 บันทึกภาพ</button>
       </div>
       <div class="advice" id="pAdvice"></div>
       <div class="kpis" id="pKpis" style="margin-bottom:0"></div>
@@ -1016,7 +1025,7 @@ function renderPerson() {
   });
 
   $('pTable').innerHTML = `<thead><tr><th>วันที่</th><th class="num">บน</th><th class="num">ล่าง</th><th class="num">ชีพจร</th><th>ระดับ</th></tr></thead><tbody>` +
-    (d.all.length ? d.all.slice().reverse().map(r => `<tr><td>${dLong(r.date)}${periodTxt(r)}</td><td class="num">${r.sys ?? '–'}</td><td class="num">${r.dia ?? '–'}</td><td class="num">${r.pulse ?? '–'}</td><td>${chip(r.st)}</td></tr>`).join('')
+    (d.all.length ? d.all.slice().reverse().map(r => `<tr data-d="${r.date}"><td>${dLong(r.date)}${periodTxt(r)}</td><td class="num">${r.sys ?? '–'}</td><td class="num">${r.dia ?? '–'}</td><td class="num">${r.pulse ?? '–'}</td><td>${chip(r.st)}</td></tr>`).join('')
       : `<tr><td colspan="5" class="empty">ยังไม่มีข้อมูลการวัด</td></tr>`) + '</tbody>';
 }
 
@@ -1311,6 +1320,40 @@ function exBuild() {
   $('exNote').textContent = (EX.swapped ? '↔ สลับวันที่ให้แล้ว ("ตั้งแต่" ต้องมาก่อน "ถึง") · ' : '') + (rows.length > MAXP ? `แสดงตัวอย่าง ${MAXP} แถวแรก — ไฟล์ที่ดาวน์โหลดมีครบ ${rows.length.toLocaleString('th-TH')} แถว · ` : '') + 'เงื่อนไข: ' + cond.join(' · ');
   ['exXlsx', 'exCsv', 'exPrint'].forEach(id => $(id).disabled = !rows.length);
 }
+// ---- บันทึกภาพหน้ารายบุคคล (html2canvas-pro โหลดเมื่อกดครั้งแรก — หน้าเว็บไม่ช้าลง)
+// ใช้ตัว pro เพราะ html2canvas 1.4.1 อ่านสี color-mix() ที่หน้าเว็บใช้ไม่ได้ (สร้างภาพล้ม)
+let h2cLoading = null;
+const SHOT_DAYS = 7;
+function loadH2C() {
+  if (window.html2canvas) return Promise.resolve();
+  return h2cLoading || (h2cLoading = new Promise((ok, bad) => { const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/html2canvas-pro@1.6.7/dist/html2canvas-pro.min.js'; sc.onload = ok; sc.onerror = () => { h2cLoading = null; bad(new Error('load')); }; document.head.appendChild(sc); }));
+}
+function personShot() {
+  const d = DATA && DATA.drivers.find(x => x.id === personId); if (!d) return;
+  const btn = $('pShot'), label = btn.textContent; btn.disabled = true; btn.textContent = '⏳ กำลังสร้างภาพ…';
+  const now = new Date(), stamp = now.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+  const part = v => String(v || '').replace(/[^A-Za-z0-9-]+/g, '');
+  // ชื่อไฟล์ภาษาอังกฤษ (เหตุผลเดียวกับรายงาน) · ทะเบียนเดียวกันมีทั้งกะ A/B จึงใส่กะด้วย
+  const name = ['BP_person', part(d.plate) || part(d.group), d.shift && d.shift !== '-' ? 'shift' + part(d.shift) : '', part(d.plate) ? '' : 'id' + d.id, DATA.dates[DATA.dates.length - 1]].filter(Boolean).join('_') + '.png';
+  loadH2C().then(() => html2canvas($('person'), {
+    backgroundColor: css('--bg') || '#ffffff', scale: Math.min(2, Math.max(1.5, window.devicePixelRatio || 1)), logging: false, useCORS: true,
+    onclone: doc => {
+      const sec = doc.getElementById('person'); sec.classList.add('shot');
+      // บันทึกรายวันในภาพ: เฉพาะ 7 วันล่าสุด (วันละ 2 แถวถ้าวัดเช้า/บ่าย) — บนหน้าเว็บยังแสดงครบ
+      const keep = [...new Set([...sec.querySelectorAll('#pTable tbody tr[data-d]')].map(tr => tr.dataset.d))].slice(0, SHOT_DAYS);
+      sec.querySelectorAll('#pTable tbody tr[data-d]').forEach(tr => { if (!keep.includes(tr.dataset.d)) tr.remove(); });
+      const desc = sec.querySelector('#pTable').closest('.card').querySelector('.desc');
+      if (desc && keep.length) desc.textContent = `${SHOT_DAYS} วันล่าสุด (${dShort(keep[keep.length - 1])} – ${dShort(keep[0])}) · ล่าสุดอยู่ด้านบน`;
+      const f = doc.createElement('div'); f.className = 'shot-foot';
+      f.innerHTML = `<span>ผลวัดความดัน พนักงานขับรถ · ข้อมูล ${esc(dLong(DATA.dates[0]))} – ${esc(dLong(DATA.dates[DATA.dates.length - 1]))} · บันทึกภาพ ${esc(stamp)}</span><span>Made By <b>Suwarot Thanabat</b> · L150081</span>`;
+      sec.appendChild(f);
+    }
+  })).then(c => new Promise((ok, bad) => c.toBlob(b => b ? ok(b) : bad(new Error('blob')), 'image/png')))
+    .then(b => exDownload(b, name))
+    .catch(() => alert('สร้างภาพไม่สำเร็จ (ตรวจอินเทอร์เน็ต) — ลองใหม่อีกครั้ง'))
+    .finally(() => { btn.disabled = false; btn.textContent = label; });
+}
 // ชื่อไฟล์เป็นภาษาอังกฤษ: บางเบราว์เซอร์ตัดตัวอักษรไทยในชื่อไฟล์ดาวน์โหลดทิ้ง (เหลือแค่ "download")
 const exFileName = ext => { const L = EX.last, g = exVal('exGroup'), sh = exVal('exShift');
   const kind = { raw: 'readings', person: 'person-summary', group: 'group-summary', daily: 'daily-summary' }[L.type] || 'report';
@@ -1452,6 +1495,7 @@ function buildFilters() {
   seg('shiftSeg', shifts, shift, v => v === '-' ? 'ไม่ระบุ' : 'กะ ' + v, v => { shift = v; });
   $('groupWrap').classList.toggle('hidden', DATA.groups.length < 2);
 }
+$('pShot').onclick = personShot;
 const qEl = $('q');
 qEl.addEventListener('input', () => {
   query = qEl.value.trim();
